@@ -1,5 +1,6 @@
-# **GPU Parallel Unconstrained Linear Least Squares Algorithm**
-
+---
+title: **GPU Parallel Unconstrained Linear Least Squares Algorithm**
+---
 Benjamin Sauk
 
 ## Summary
