@@ -1,11 +1,16 @@
-## Welcome to GitHub Pages
+## GPU Parallel Unconstrained Linear Least Squares Algorithm
 
-You can use the [editor on GitHub](https://github.com/bsauk/lsq.io/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+Benjamin Sauk
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+### Summary
 
-### Markdown
+I will implement a GPU parallel unconstarined linear least squares algorithm based off of Alan Miller's algorithm designed for Fortran 90. I will compare the performance of common linear least square algorithms against the performance of this algorithm for a range of different sized problems. 
 
+### Background
+
+
+
+<!---
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
 
 ```markdown
@@ -35,3 +40,5 @@ Your Pages site will use the layout and styles from the Jekyll theme you have se
 ### Support or Contact
 
 Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+
+--->
