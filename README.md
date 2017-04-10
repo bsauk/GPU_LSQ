@@ -1,12 +1,12 @@
-## GPU Parallel Unconstrained Linear Least Squares Algorithm
+# **GPU Parallel Unconstrained Linear Least Squares Algorithm**
 
-Benjamin Sauk
+->Benjamin Sauk<-
 
-### Summary
+## Summary
 
 I will implement a GPU parallel unconstarined linear least squares algorithm based off of Alan Miller's algorithm designed for Fortran 90. I will compare the performance of common linear least square algorithms against the performance of this algorithm for a range of different sized problems. 
 
-### Background
+## Background
 
 
 
