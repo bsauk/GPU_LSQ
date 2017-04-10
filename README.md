@@ -88,6 +88,8 @@ Having trouble with Pages? Check out our [documentation](https://help.github.com
 
 --->
 
+## References
+
 [1] A. Miller. LSQ.f90, Current as of 10, April, 2017. jblevins.org/mirror/amiller/.
 
 [2] E. Anderson, Z. Bai, C. Bischof, L. S. Blackford, J. Demmel, J. Dongarra, J. Du Croz, S. Hammarling, A. Greenbaum, A. McKenney, and D. Sorensen. LAPACK users’ guide (third ed.). Society for Industrial and Applied Mathematics, Philadelphia, PA, USA, 1999.
