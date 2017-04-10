@@ -16,6 +16,20 @@ In the problem of best subset regression, there exists two different axis of par
 
 ## The Challenge
 
+- From examining the LSQ.f90 algorithm, there is a large portion of the code which is not currently parallelizable and would require a different strategy than what is currently implemented to speed up each individual least squares problem.
+
+- The LSQ.f90 algorithm has potential for divergent execution, depending on the input data, and I think that the communication to computation ratio will be problem dependent. 
+
+- There will be a trade-off between how finely grained the least squares algorithm can be and how many independent linear least squares problems can be executed simultaneously on a NVIDIA GPU. I may have to use some type tuning rules or heuristics to identify how much I should parallelize each independent linear least squares problem.
+
+- While not a parallel programming challenge, I will also have to convert the code from Fortran to either C CUDA CUDA Fortran syntax. 
+
+## Resources
+
+I will be starting with the LSQ.f90 algorithm created by Alan Miller. I will begin by implementing this code in CUDA and identify opportunties for independent calculations that can be run simultaneously in parallel. I will also start development on the GHC machines or the latedays clusters so that I have access to NVIDIA K40 GPUs to test the performance of my parallel algorithm after implementing it. I was currently planning on developing this algorithm for a single GPU implementation, but if time permits, it may be interesting to pursue a multi-GPU implementation if there is enough parallelism to exploit. 
+
+## Goals and Deliverables
+
 
 
 <!---
