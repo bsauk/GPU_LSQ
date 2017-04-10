@@ -43,7 +43,7 @@ I will be starting with the LSQ.f90 algorithm created by Alan Miller. I will beg
 
 ## Platform Choice
 
-The reason why I have chosen to use a GPU and to use CUDA is every QR factorization update or downdate should be a simple independent process that can be handled by an individual thread or thread block. With a GPU I should be able to update or downdate a large number of solutions simultaneously and determine the best subset regression in a hopefully reasonable amount of time.
+The reason why I have chosen to use a GPU and to use CUDA is every QR factorization update or downdate should be a simple independent process that can be handled by an individual thread or thread block. With a GPU I should be able to update or downdate a large number of solutions simultaneously and determine the best subset regression in a reasonable amount of time.
 
 ## Schedule
 
