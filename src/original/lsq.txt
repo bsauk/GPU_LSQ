@@ -1,0 +1,205 @@
+The module LSQ is for unconstrained linear least-squares fitting.   It is
+based upon Applied Statistics algorithm AS 274 (see comments at the start
+of the module).    A planar-rotation algorithm is used to update the QR-
+factorization.   This makes it suitable for updating regressions as more
+data become available.   The module contains a test for singularities which
+is simpler and quicker than calculating the singular-value decomposition.
+
+An important feature of the algorithm is that it does not square the condition
+number.   The matrix X'X is not formed.   Hence it is suitable for ill-
+conditioned problems, such as fitting polynomials.
+
+By taking advantage of the MODULE facility, it has been possible to remove
+many of the arguments to routines.   Apart from the new function VARPRD,
+and a back-substitution routine BKSUB2 which it calls, the routines behave
+as in AS 274.
+
+The package as posted comprises:
+
+      LSQ.DOC        this note
+            LSQ.F90        the least-squares module
+	          DEMO.F90       a simple demonstration program
+		        FUELCONS.DAT   a file of data to be read by the demo program
+			      TEST1.F90      another program which fits a cubic polynomial and has
+			                           a deliberate singularity
+
+This package is being made available freely, and may be freely distributed.
+The author is:
+     Author: Alan Miller
+                  Formerly of CSIRO Division of Mathematics & Statistics
+		               but now retired.
+			            e-mail: amiller@bigpond.net.au
+
+
+Representation of floating-point numbers
+----------------------------------------
+
+With many Fortran 77 compilers on many computers, the REAL data type gives
+floating-point numbers to about 7 decimal digits accuracy.   This is barely
+adequate for least-squares calculations, if there is any ill-conditioning.
+In such cases, the use of the DOUBLE PRECISION data type is highly desirable,
+while quadruple precision is available with a few compilers.
+
+Fortran 90 allows the user to specify the minimum accuracy required.  This
+module uses `lsq_kind' to specify the accuracy required.  This parameter is
+set in the module as:
+
+INTEGER, PARAMETER           :: lsq_kind = SELECTED_REAL_KIND(10,70)
+
+This means that the compiler must provide a representation which stores
+floating-point numbers to at least 10 significant decimal digits, and
+the range of exponents must be at least from 10^(-70) to 10^(+70).
+To change the accuracy of all floating-point operations in this module,
+only the value of this one parameter needs to be changed.
+
+Using many computer/compiler combinations, `lsq_kind' will be identical
+to using the Fortran 77 DOUBLE PRECISION.
+
+N.B. All floating-point arguments passed to program units in this module
+should be of kind `lsq_kind'.   That is, they can be declared in the
+calling program units as, e.g.
+REAL (lsq_kind) :: x(0:10), y, regn_coeff(0:10), resid(1:1000)
+
+Contents of module LSQ
+----------------------
+
+The program units in LSQ are:
+
+SUBROUTINE startup(nvar, fit_const)
+
+SUBROUTINE includ(weight, xrow, yelem)
+
+SUBROUTINE regcf(beta, nreq, ifault)
+
+SUBROUTINE tolset
+
+SUBROUTINE sing(lindep, ifault)
+
+SUBROUTINE ss
+
+SUBROUTINE cov(nreq, var, covmat, dimcov, sterr, ifault)
+
+SUBROUTINE inv(nreq, rinv)
+
+SUBROUTINE partial_corr(in, cormat, dimc, ycorr, ifault)
+
+SUBROUTINE vmove(from, to, ifault)
+
+SUBROUTINE reordr(list, n, pos1, ifault)
+
+SUBROUTINE hdiag(xrow, nreq, hii, ifault)
+
+REAL (lsq_kind) FUNCTION varprd(x, nreq, var, ifault)
+
+SUBROUTINE bksub2(x, b, nreq)
+
+Use of module LSQ
+-----------------
+
+If the user has one complete set of data, and simply wants to calculate
+the least-squares fit, then
+
+1. CALL startup(nvar, fit_const)
+   where nvar = the number of variables, and fit_const = .true. if a constant
+      is to be fitted and fit_const = .false. otherwise.   For instance, if
+         you want to fit:
+
+   Y = b0 + b1.X1 + b2.X2 + b11.X1^2 + b12.X1.X2 + b22.X2^2
+
+   then you will need to pass X1, X2, X1^2, X1.X2 and X2^2 as if they were
+      separate variables.   Specify nvar = 5 in this case, and fit_const = .true.
+
+2. For each case (observation), prepare a one-dimensional array, XROW in
+   the example below, declared as type lsq_kind.   In the above case, you
+      may like to declare XROW as:
+
+   REAL (lsq_kind) :: xrow(0:5)
+
+   where the first element, xrow(0) should be set equal to 1.0 to give the
+      constant in the model.   Then
+
+   CALL includ(weight, xrow, yelem)
+
+   where yelem is the value of the Y-variable, and weight is the weight to
+      be assigned to this case.   If unweighted least squares is required,
+         simply set weight = 1.0.
+
+   Each time that routine includ is called, a count is updated in integer
+      variable nobs.   This is a public variable in module lsq which is
+         available for use in the user's calling program.
+
+3. CALL tolset
+   This automatically calculates tolerances for detecting singularities.
+
+4. CALL sing(lindep, ifault)
+   This call is optional, but recommended.   It tests for singularities.
+      If singularities are detected, then a non-zero value is returned for
+         integer variable ifault.   lindep is a logical array which must be
+	    declared in the user's calling program, e.g.
+
+   LOGICAL :: lindep(0:5)
+
+   If lindep(i) = .true., it means that the i-th variable is linearly
+      related to some of the earlier variables.   For instance, if we are
+         fitting the quadratic surface in the example above, and we have only
+	    5 observations, then lindep(5) will be returned as .true.
+
+   If singularities are detected, then the QR-factorization produced by
+      includ will be corrected.
+
+5. CALL regcf(beta, nreq, ifault)
+   This returns the least-squares regression coefficients in array beta.
+      nreq = the number of coefficients required.   For instance, in the above
+         example, set nreq = 6 to calculate all regression coefficients.   If
+	    you would also look at the coefficients for the linear model (constant
+	       plus terms for X1 and X2), specify nreq = 3.
+
+   If singularities are detected, one or more of the regression coefficients
+      will be returned as zero, and a negative value will be returned for ifault.
+
+6. The residual sum of squares with the full model fitted is contained in
+   the public variable sserr.
+
+If you want to add more data, then just call includ as many times as necessary
+to process the additional data.
+
+The module contains facilities for calculating residual sums of squares for
+sub-models, and for re-ordering variables.   These are included to facilitate
+various kinds of subset regression.
+
+The standard errors and covariances returned by subroutine COV, and the
+standard error of prediction returned by VARPRD, all assume that the residuals
+are independent and homogeneous.   In most cases these quantities will be
+under-estimates if residuals are correlated.
+
+For more details, see the comments in the module or the demo program, or
+consult the reference below.
+
+Reference:
+Miller, A.J. (1992). Algorithm AS 274: Least squares routines to supplement
+      those of Gentleman.  Appl. Statist., vol.41(2), 458-478.
+
+Some additional references on least-squares methods:
+
+Farebrother, R.W. (1988).  Linear least squares computations.  Particularly
+chapter 6.   Publisher: Marcel Dekker.   ISBN 0-8247-7661-5   Unfortunately
+it is ridiculously expensive.
+
+Seber, G.A.F. (1977).  Linear regression analysis.  Particularly chapter 11.
+Publisher: Wiley.   ISBN 0-471-01967-4   George is professor of statistics at
+the University of Auckland.   A very good book on the statistics of regression,
+and one of my basic references.
+
+Longley, J.W. (1984).  Least squares computations using orthogonalization
+methods.   Marcel Dekker again.   Astronomical price even though it is
+photo-offset.   Volume 93 in Lecture notes in pure and applied maths.
+ISBN 0-8247-7232-6
+
+Miller, A.J. (1990).  Subset selection in regression.   Publisher: Chapman
+& Hall (monographs on Statistics & Appl. Probablility no. 40).
+See chapter 2.   ISBN 0-412-35380-6
+
+There is a second edition of this book, published by CRC Press in 2002.
+ISBN 1-58488-171-2
+
+!--------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Will need to include some type of header file with all of my other functions defined in it
+// Need to accept an input file
+int main(int argc, char** argv) {
+  CommandLineArgs args(argc, argv);
+  if(args.CheckCmdLineFlag("help")) {
+    printf("This is a test\n");
+  }
+}

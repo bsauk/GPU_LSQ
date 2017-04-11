@@ -1,0 +1,97 @@
+Test1
+Fitting a cubic polynomial to a set of artificial data for which the
+least-squares regression coefficients = 1.0 exactly.   To introduce a
+difficult singularity, an extra variable is added which is equal to
+x + x**2.   The order of the variables is rotated.   This tests out the
+code of:
+      includ
+      tolset
+      sing
+      regcf
+      ss
+      vmove
+The test is too tough for single precision on machines with only 24 bits
+for the mantissa.
+
+Test2
+Calculates the regression coefficients for the Longley data.   This is not
+badly ill-conditioned, despite what is often claimed in the literature, and
+reasonable accuracy can be obtained in single precision.   The order of
+variables is rotated.   Tests the code of:
+      includ
+      regcf
+      tolset
+      sing
+      ss
+      vmove
+
+Test3
+Another test of treatment of singularities, this uses a random number
+generator.   7 predictors but rank = 5.   All regression coefficients should
+be 0, 1 or 2.  Rows 4 & 5 are swapped, as also are rows 6 & 7.   Tests the 
+code of:
+      includ
+      regcf
+      tolset
+      sing
+      ss
+      vmove
+
+Test4
+Calculates the inverse of a simple upper-triangular matrix.   Tests the code
+of:
+      inv
+
+Test5
+Calculates a simple covariance matrix.   Tests the code of:
+      cov
+      inv
+
+Test6
+Calculates the correlation matrix for the Draper & Smith STEAM data.   The
+correlations check against those in Draper & Smith.   Tests the code of:
+      includ
+      pcorr
+      cor
+
+Test7
+Uses the Cloud seeding example on page 4 of Cook & Weisberg to calculate the
+diagonal elements of the hat matrix.   Tests the code of
+      hdiag
+
+Test8
+A test with more variables than cases (8 variables, 5 cases), with rank = 4.
+Tests the code of:
+      includ
+      tolset
+      sing
+      ss
+      regcf
+      reordr
+
+Test9
+The test data for this is very ill-conditioned, but NOT singular.   The initial
+regression coefficients may be accurate, depending upon whether the compiler
+detects a singularity.   When the order of the variables is changed, a
+singularity will probably be detected and there will be large errors in the
+regression coefficients which will get progressively worse.
+Uses the data set: ake_b253.dat
+
+Wampler
+A well-known test of how least-squares software handles ill-conditioning.
+Though the performance of this suite of routines looks poor, any routines
+based upon the normal equations approach perform far worse.   Tests the code
+of:
+      includ
+      tolset
+      sing
+      regcf
+
+t_scale
+Some least-squares programs, including some very well-known ones which use
+the singular-value decomposition, ignore the scaling of the variables.   This
+means that they falsely report singularities for problems which are not
+singular and not even ill-conditioned.   Artificial data are used which could
+have come from an experiment and to which a quadratic surface is to be fitted.
+Data set: quadsurf.dat
+

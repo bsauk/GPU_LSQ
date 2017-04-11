@@ -1,0 +1,36 @@
+
+   3   dl1bl3= bliss vol ii p.294... all dat
+       problem title      dl1bl3= bliss vol ii p.294... all dat
+   Number of observation =   60
+   Number of parameters =    3
+   Minimum number of parameters considered =    1
+   Percentage deviation from optimality allowed =  5.00
+       ** best subset lav program
+ifault=  0
+
+
+  best results for lav subset of size =   1
+   **************sum of absolute values =           7.659
+
+beta(  2)          0.550
+
+
+  best results for lav subset of size =   2
+   **************sum of absolute values =           5.407
+
+beta(  2)          0.818
+
+beta(  3)         -0.782
+
+
+  best results for lav subset of size =   3
+   **************sum of absolute values =           3.877
+
+beta(  3)         -1.116
+
+beta(  2)          0.628
+
+beta(  1)          0.235
+
+
+    iteration count =      87
