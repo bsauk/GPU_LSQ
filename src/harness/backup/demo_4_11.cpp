@@ -47,6 +47,41 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
   sserr[0] = sserr[0]+w*y*y;
 }    
 
+void lsq(double** A, double* weights, double* y, int rows, int cols) {
+  int nvar = cols;
+  int nobs = 0;
+  double sserr[1];
+  *sserr = 0.0;
+  double D[cols];
+  int r_dim = cols*(cols-1)/2;
+  double r[r_dim];
+  double tol[cols];
+  double rss[cols];
+  int vorder[cols];
+  int row_ptr[cols];
+  double rhs[cols]; // Vector of RHS projections after scaling by sqrt(D).
+  double xrow[cols+1]; // May need to check this part of the implementation for speed later
+  for(int i=0; i<cols; i++) {
+    vorder[i] = i;
+  }
+  row_ptr[0] = 0;
+  for(int i=1; i<cols; i++) {
+    row_ptr[i] = row_ptr[i-1] + cols - i; 
+  }
+
+  for(int i=0; i<rows; i++) {
+    for(int j=0; j<cols; j++) {
+      if(j==0) 
+	xrow[j] = 1.0;
+      else
+	xrow[j] = A[i][j-1];
+    }
+    includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
+  }    
+  nobs = rows;
+  
+}
+
 // Will need to include some type of header file with all of my other functions defined in it
 int main(int argc, char* argv[]) {
   std::cout.precision(16); //16 digit precision to match up with Fortran implementation move to header
@@ -72,40 +107,20 @@ int main(int argc, char* argv[]) {
   const int rows = atoi(argv[2]);
   const int cols = atoi(argv[3])+1;
   // If fit_constant true, which i'm assuming for now add 1 to cols
-  double A[rows][cols]; // Input matrix
-  double rhs[cols]; // Vector of RHS projections after scaling by sqrt(D).
-  double b[rows]; // Output vector for Ax = b for other algorithms
-  double xrow[cols+1];
+  double **A = new double*[rows]; // Input matrix
+  double A2[rows][cols]; //Input matrix for other methods
   double y[rows];
   double weights[rows];
-  int nvar = cols;
-  int nobs = 0;
-  double sserr[1];
-  *sserr = 0.0;
-  double D[cols];
-  int r_dim = cols*(cols-1)/2;
-  double r[r_dim];
-  double tol[cols];
-  double rss[cols];
-  int vorder[cols];
-  int row_ptr[cols];
-
-  for(int i=0; i<cols; i++) {
-    vorder[i] = i;
-  }
-  row_ptr[0] = 0;
-  for(int i=1; i<cols; i++) {
-    row_ptr[i] = row_ptr[i-1] + cols - i; 
-  }
+  double b[rows]; // Output vector for Ax = b for other algorithms  
   
   std::ifstream file;
   file.open(argv[1]);
   for(int i=0; i<rows; i++) {
-    xrow[0] = 1.0;
+    A[i] = new double[cols];
     for(int j=0; j<cols+1; j++) {
       if(j<cols-1) {
 	file >> A[i][j];
-	xrow[j+1] = A[i][j];
+	A2[i][j] = A[i][j];
       } else if(j==cols-1) {
 	file >> weights[i];
       } else {
@@ -113,11 +128,9 @@ int main(int argc, char* argv[]) {
 	b[i] = y[i];
       }
     } 
-    // Do initial QR factorization, either for whole matrix or line by line can compare the differences
-    //LSQ implementation
-    includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
   }
+  file.close();
+  //LSQ implementation
+  lsq(A, weights, y, rows, cols);
   
-  nobs = rows;
-
 }
