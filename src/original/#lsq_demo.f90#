@@ -118,11 +118,11 @@ PROGRAM demo
   ELSE
      DO i = 1, nvar
         IF (lindep(i)) THEN
-!           WRITE(*, *) vname(i), ' is exactly linearly related to earlier variables'
+           WRITE(*, *) vname(i), ' is exactly linearly related to earlier variables'
         END IF
      END DO ! i = 1, nvar
   END IF ! (ifault == 0)
-!  WRITE(*, *)
+  WRITE(*, *)
 
   !     Show correlations (IN = 1 for `usual' correlations)
 
@@ -167,7 +167,7 @@ PROGRAM demo
   CALL cov(nreq, var, covmat, max_cdim, sterr, ifault)
 
   !     Calculate t-values
-! pick up here! 4/13
+
   t(0:nreq-1) = beta(0:nreq-1) / sterr(0:nreq-1)
 
   !     Output regression table, residual sums of squares, and R-squared.
