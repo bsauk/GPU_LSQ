@@ -129,6 +129,7 @@ CONTAINS
     INTEGER   :: i
 
     vsmall = 10. * TINY(zero)
+    
     nobs = 0
     IF (fit_const) THEN
        ncol = nvar + 1
@@ -428,7 +429,6 @@ CONTAINS
 
     INTEGER    :: i
     REAL (dp)  :: total
-
     total = sserr
     rss(ncol) = sserr
     DO i = ncol, 2, -1
@@ -492,8 +492,8 @@ CONTAINS
 
     dim_rinv = nreq*(nreq-1)/2
     ALLOCATE ( rinv(dim_rinv) )
-
     CALL INV(nreq, rinv)
+
     pos = 1
     start = 1
     DO row = 1, nreq
@@ -511,7 +511,9 @@ CONTAINS
              pos2 = pos2 + 1
           END DO ! K = col+1, nreq
           covmat(pos) = total * var
-          IF (row == col) sterr(row) = SQRT(covmat(pos))
+          IF (row == col) THEN
+             sterr(row) = SQRT(covmat(pos))
+          END IF
           pos = pos + 1
        END DO ! col = row, nreq
        start = start + nreq - row

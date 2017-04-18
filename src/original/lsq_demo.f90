@@ -112,7 +112,6 @@ PROGRAM demo
 !  WRITE(*, *)'No. of observations =', nobs
 
   CALL sing(lindep, ifault)              ! Checks for singularities
-
   IF (ifault == 0) THEN
      WRITE(*, *)'QR-factorization is not singular'
   ELSE
@@ -128,6 +127,7 @@ PROGRAM demo
 
   in = 1
   CALL partial_corr(in, cormat, max_cdim, ycorr, ifault)
+
   CALL printc(in, cormat, max_cdim, ycorr, vname, y_name, 1, lout, ifault)
 !  WRITE(*, *)
 !  WRITE(*, *)'Press ENTER to continue'
@@ -139,9 +139,9 @@ PROGRAM demo
   !     XX, but we will show how regressions can be performed for a subset
   !     of the variables in the QR-factorization.   Routine REORDR will be used
   !     to re-order the variables.
-
   list(1:4) = (/ 2, 4, 5, 7/)
   CALL reordr(list, 4, 2, ifault)        ! Re-order so that the first 4 variables
+
   ! appear in positions 2,3,4 & 5.
   ! N.B. Though variables # 2, 4, 5 & 7
   !      will occupy positions 2-5, they
@@ -164,39 +164,37 @@ PROGRAM demo
   !     standard errors.
 
   var = rss(nreq) / (nobs - nreq)
-  CALL cov(nreq, var, covmat, max_cdim, sterr, ifault)
 
+  CALL cov(nreq, var, covmat, max_cdim, sterr, ifault)
   !     Calculate t-values
-! pick up here! 4/13
   t(0:nreq-1) = beta(0:nreq-1) / sterr(0:nreq-1)
 
   !     Output regression table, residual sums of squares, and R-squared.
-
-!  WRITE(*, *)
-!  WRITE(*, *)'Variable   Regn.coeff.   Std.error  t-value   Res.sum of sq.'
+  WRITE(*, *)
+  WRITE(*, *)'Variable   Regn.coeff.   Std.error  t-value   Res.sum of sq.'
   DO i = 0, nreq-1
-!     WRITE(*, 900) vname(vorder(i+1)), beta(i), sterr(i), t(i), rss(i+1)
+     WRITE(*, 900) vname(vorder(i+1)), beta(i), sterr(i), t(i), rss(i+1)
 900  FORMAT(' ', a8, '  ', g12.4, '  ', g11.4, ' ', f7.2, '  ', g14.6)
   END DO
-!  WRITE(*, *)
+  WRITE(*, *)
 
   !     Output correlations of the parameter estimates
-
-!  WRITE(*, *) 'Covariances of parameter estimates'
+  
+  WRITE(*, *) 'Covariances of parameter estimates'
   i2 = nreq
   DO i = 1, nreq-1
      i1 = i2 + 1
      i2 = i2 + nreq - i
-!     WRITE(output, '(" ", a8)') vname(vorder(i+1))
-!     WRITE(output(10*i:), '(7f10.3)') covmat(i1:i2)
-!     WRITE(*, '(a)') output
+     WRITE(output, '(" ", a8)') vname(vorder(i+1))
+     WRITE(output(10*i:), '(7f10.3)') covmat(i1:i2)
+     WRITE(*, '(a)') output
   END DO
-!  WRITE(*, *)
-
+  WRITE(*, *)
+  
   !     Now delete the variable with the smallest t-value by moving it
   !     to position 5 and then repeating the calculations for the constant
   !     and the next 3 variables.
-
+  
   j = 1
   tmin = ABS(t(1))
   DO i = 2, nreq-1
@@ -241,7 +239,7 @@ PROGRAM demo
 !  WRITE(*, *)'Press ENTER to continue'
 !  READ(*, *)
 
-!  WRITE(*, *)'State     Actual    Fitted  Residual  Std.resid.  SE(prediction)'
+  WRITE(*, *)'State     Actual    Fitted  Residual  Std.resid.  SE(prediction)'
   DO i = 1, nobs
      xx(0) = one
      DO j = 1, nreq-1

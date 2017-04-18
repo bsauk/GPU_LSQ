@@ -1,2 +1,0 @@
-all:
-	g++ lsq_demo.cpp
