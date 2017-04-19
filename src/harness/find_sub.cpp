@@ -6,6 +6,99 @@
 #include <math.h>
 #include "lsq.h"
 #include "sub.h"
+/***********************************************************************
+ Exhaustive search algorithm, using leaps and bounds, applied to
+   the variables in position FIRST, ..., LAST. If FIRST > 1, variables
+   in positions prior to this are forced in. If LAST < cols, variables
+   in positions after this are forced out.   
+************************************************************************/
+void xhaust(int first, int last, int* ifault, int cols, int max_size, double* D, double* tol, double* rss, double* bound, int nbest, double** ress, int* vorder, int** lopt, double* sserr, double* rhs, double* r, int* row_ptr, bool* rss_set) {
+  int row, i, jmax, ipt, newpos, iwk[max_size];
+  double ss[last], smax, temp;
+
+  ifault[0] = 0;
+  if(first >= cols) ifault[0] = 1;
+  if(last <= 1) ifault[0] = ifault[0]+2;
+  if(first < 1) ifault[0] = ifault[0]+4;
+  if(last > cols) ifault[0] = ifault[0]+8;
+  if(ifault[0] != 0) return;
+
+  // Record subsets contained in the initial ordering, including check for variables which are linearly related to earlier variables.
+  // This should be redundant if the user has first called SING and init_subsets, which is included in the gold_subset function.
+
+  for(int i=first; i<max_size; i++) {
+    if(D[i] <= tol[i]) {
+      ifault[0] = -999;
+      return;
+    }
+    report(i, rss[i], max_size, bound, nbest, ress, vorder, lopt);
+  }
+
+  // IWK[i] contains the upper limit for the I-th simulated for loop for
+  // I = FIRST, ...., max_size-1. IPT points to the current for loop.
+
+  for(int i=first; i<max_size; i++) {
+    iwk[i] = last;
+  }
+  // The following the inner most loop
+  // *******************************************************************************************************
+  bool outer_loop = true;
+  while(true) {
+    if(outer_loop) {
+      add1(max_size, iwk[max_size], ss, smax, jmax, ifault, cols, D, rhs, r, tol, row_ptr);
+      exadd1(max_size, smax, jmax, ss, iwk[max_size], max_size, rss, bound,  nbest, ress,  vorder, lopt);
+      
+      // Move to next lower numbered loop which has not been exhausted.
+      ipt = max_size-1;
+    }
+    if(ipt >= iwk[ipt]) {
+      ipt--;
+      if(ipt >= first) {
+	outer_loop = false;
+	continue;
+      } else {
+	return;
+      }
+    }
+    // Lower variable from position IPT to position IWK[ipt].
+    // Record any good new subsets found by the move.
+	
+    newpos = iwk[ipt];
+    vmove(ipt, newpos, ifault, cols, rss_set, rss, sserr, row_ptr, D, rhs, r, vorder, tol);
+    int last_val = std::min(max_size, newpos-1);
+    for(int i=ipt; i<last_val; i++) {
+      report(i, rss[i], max_size, bound, nbest, ress, vorder, lopt);
+    }
+    
+    // Reset all ends of loops for i>=IPT.
+    
+    for(int i=ipt; i<max_size; i++) {
+      iwk[i] = newpos-1;
+    }
+	
+    // If residual sum of squares for all variables above position NEWPOS
+    // is greater than bound[i], no better subsets of size i can be found
+    // inside the current loop.
+	
+    temp = rss[newpos-1];
+    for(int i=ipt; i<max_size; i++) {
+      if(temp > bound[i]) {
+	ipt = i-1;
+	if(ipt < first) return;
+	outer_loop = false;
+      }
+    }
+    if(iwk[max_size] > max_size) {
+      outer_loop = true;
+      continue;
+    }
+    ipt = max_size-1;
+    outer_loop = false;
+  }
+// *********************************************************************************************************************************
+}
+	
+
 
 void exadd1(int ivar, int sm, int jm, double* ss, int last, int max_size, double* rss, double* bound, int nbest, double** ress, int* vorder, int** lopt) {
   int ltemp;
