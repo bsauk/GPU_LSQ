@@ -120,6 +120,9 @@ void subset_gold(double** A, double* weights, double* y, int rows, int cols, int
   int last = cols;
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
 
+  // Exhaustive search, which I will compare performance against on GPU implementation!
+  
+
 }
 
 int main(int argc, char* argv[]) {
