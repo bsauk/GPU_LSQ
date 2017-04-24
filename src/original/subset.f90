@@ -71,7 +71,6 @@ PROGRAM subset
      i0 = 0
      total_sumsq = rss(1) + d(1)*rhs(1)**2
   END IF
-  WRITE(*,*)'total_sumsq', total_sumsq
   !     Display subset selection menu and ask for choice.
 
   DO

@@ -120,7 +120,6 @@ CONTAINS
        END DO
        pos = pos + inc
     END DO
-
     !     Incremental sum of squares for a variable = SXY * SXY / SXX.
     !     Calculate whenever sqrt(SXX) > TOL for that variable.
 
@@ -498,7 +497,6 @@ CONTAINS
     !     Restore VORDER(IVAR)
 
     vorder(ivar) = ltemp
-
     RETURN
   END SUBROUTINE exadd1
 
@@ -566,7 +564,6 @@ CONTAINS
 
        IF (jmax > pos) CALL vmove(jmax, pos, ier)
     END DO
-
     RETURN
   END SUBROUTINE forwrd
 
@@ -664,7 +661,7 @@ CONTAINS
                 EXIT
              END IF
              new = l(i2)
-
+             
              !     If TEMP > NEW, move NEW to lower-numbered position.
 
              IF (temp > new) THEN
