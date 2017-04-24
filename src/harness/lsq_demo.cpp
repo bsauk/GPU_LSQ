@@ -46,10 +46,11 @@ void lsq_gold(double** A, double* weights, double* y, int rows, int cols) {
     vorder[i] = i;
   }
   row_ptr[0] = 0;
-  for(int i=1; i<cols; i++) {
+  for(int i=1; i<cols-1; i++) {
     row_ptr[i] = row_ptr[i-1] + cols - i; 
   }
-
+  row_ptr[cols-1] = 0;
+  
   for(int i=0; i<rows; i++) {
     for(int j=0; j<cols; j++) {
       if(j==0) 

@@ -20,8 +20,8 @@ Developed by bsauk on 4/17/17
 #include <sstream>
 #include <math.h>
 
-#define MAXVAR 30 // Problem specific, number of variables in equation can adjust these values
-#define MAXCASES 500 // Problem specific, number of trials
+#define MAXVAR 1500 // Problem specific, number of variables in equation can adjust these values
+#define MAXCASES 5000 // Problem specific, number of trials
 
 // This will need to be parallelized
 void includ(double weight, double* xrow, double y, int cols, double* D, double* r, double* rhs, double* sserr) {
@@ -339,14 +339,15 @@ void sing(bool* lindep, int* ifault, int cols, double* D, bool* tol_set, double*
   }
   if(!tol_set[0])
     tolset(cols, work, r, tolerances, tol_set);
+  
   for(int i=0; i<cols; i++) {
     temp = tolerances[i];
     pos = row_ptr[i];
     lindep[i] = false;
     if(work[i] <= temp) {
       lindep[i] = true;
-      ifault[0] = ifault[0] - 1;
-      if(i<cols) {
+      ifault[0] = ifault[0] + 1;
+      if(i<cols-1) {
 	pos2 = pos+cols-i-2;
 	x[0] = 0.0;
 	for(int j=i+1; j<cols; j++) {
