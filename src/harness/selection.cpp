@@ -59,7 +59,7 @@ void subset_gold(double** A, double* weights, double* y, int rows, int cols, int
   row_ptr[cols-1] = 0;
 
   
- 
+  double startInclud = CycleTimer::currentSeconds();
   for(int i=0; i<rows; i++) {
     xrow[0] = 1.0;
     for(int j=1; j<cols; j++) {
@@ -67,6 +67,8 @@ void subset_gold(double** A, double* weights, double* y, int rows, int cols, int
     }
     includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
   }
+  double endInclud = CycleTimer::currentSeconds();
+  std::cout << "Includ and converting A to xrow took " << 1000.f*(endInclud-startInclud) << std::endl;
   nobs = rows;
   sing(lindep, ifault, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
   if(ifault[0] == 0) {
@@ -111,7 +113,10 @@ void subset_gold(double** A, double* weights, double* y, int rows, int cols, int
 
   // The next part is that I will need to implement the different subset selection techniques, pick a few
   // Forward selection
+  double startForwrd = CycleTimer::currentSeconds();
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
+  double endForwrd = CycleTimer::currentSeconds();
+  std::cout << "Forwrd took " << 1000.f*(endForwrd-startForwrd) << std::endl;
   /*
   for(int i=first; i<max_size; i++) {
     std::cout << "Best subsets found of " << i << " variables" << std::endl;
