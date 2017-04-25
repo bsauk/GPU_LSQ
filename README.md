@@ -1,3 +1,7 @@
+---
+title: GPU Parallel Best Subset Regression
+---
+
 # Summary
 
 I will implement a GPU parallel unconstrained linear least squares algorithm based off of Alan Miller's algorithm designed for Fortran 90 [1]. I will compare the performance of

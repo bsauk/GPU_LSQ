@@ -3,7 +3,6 @@ layout: default
 title: Proposal
 permalink: /proposal/
 ---
-% Proposal
 
 # Summary
 
