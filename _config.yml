@@ -2,8 +2,3 @@ theme: jekyll-theme-midnight
 title: GPU Parallel Best Subset Regression
 description: Benjamin Sauk
 
-navbar-links:
- Proposal: "docs/PROPOSAL"
-
-navbar-links:
- Checkpoint: "docs/CHECKPOINT"
