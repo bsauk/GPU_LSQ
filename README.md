@@ -59,7 +59,7 @@ CPU-GPU or a multi-GPU implementation if there is enough parallelism to exploit.
 3. I will show speedup graphs that compare the performance of this GPU implementation with other implementations that I compare against to see how well this implementation does.
 By comparing the solvers over a range of different sized problems, I will demonstrate how the algorithm scales with problem size. 
 
-# Hope to Achieve
+## Hope to Achieve
 
 1. Implement a hybrid CPU-GPU LSQ algorithm that is able to increase performance by utilizing both types of processing units efficiently. 
 
