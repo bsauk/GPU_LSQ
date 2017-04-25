@@ -93,4 +93,4 @@ reasonable amount of time.
 
 [6] R. Andrew, N. Dingle. Implementing QR factorization updating algorithms on GPUs. Parallel Computing, 40:161-172, 2014.
 
-[Test of relative links](docs/test.md)
+[Checkpoint](docs/CHECKPOINT.md)
