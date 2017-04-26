@@ -34,7 +34,7 @@ Inputs for this function are:
 
 void compare_results(int first, int max_size, int nbest, int lopt_dim1, double** ressGold, double** ressGPU, int** loptGold, int** loptGPU);
 
-void subset_gold(double** A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound) {
+void subset_gold(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound) {
   int nvar = cols-1, nobs = 0, in, r_dim = cols*(cols-1)/2, max_cdim = MAXVAR*(MAXVAR+1)/2;
   double sserr[1], D[cols], r[r_dim], rss[cols], rhs[cols], xrow[cols+1], work[cols], tol[cols], ycorr[MAXVAR], cormat[max_cdim], beta[MAXVAR], xx[MAXVAR];
   double sterr[MAXVAR];
@@ -63,12 +63,13 @@ void subset_gold(double** A, double* weights, double* y, int rows, int cols, int
   for(int i=0; i<rows; i++) {
     xrow[0] = 1.0;
     for(int j=1; j<cols; j++) {
-      xrow[j] = A[i][j-1];
+      xrow[j] = A[i*cols+j-1];
     }
     includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
   }
   double endInclud = CycleTimer::currentSeconds();
   std::cout << "Includ and converting A to xrow took " << 1000.f*(endInclud-startInclud) << std::endl;
+  std::cout << "sserr = " << sserr[0] << std::endl;
   nobs = rows;
   sing(lindep, ifault, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
   if(ifault[0] == 0) {
@@ -117,7 +118,7 @@ void subset_gold(double** A, double* weights, double* y, int rows, int cols, int
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
   double endForwrd = CycleTimer::currentSeconds();
   std::cout << "Forwrd took " << 1000.f*(endForwrd-startForwrd) << std::endl;
-  /*
+
   for(int i=first; i<max_size; i++) {
     std::cout << "Best subsets found of " << i << " variables" << std::endl;
     std::cout << "     R.S.S.          Variable numbers" << std::endl;
@@ -130,7 +131,7 @@ void subset_gold(double** A, double* weights, double* y, int rows, int cols, int
       std::cout << std::endl;
     }
   }
-  */
+
 }
 
 int main(int argc, char* argv[]) {
@@ -170,8 +171,8 @@ int main(int argc, char* argv[]) {
   const int nbest = atoi(argv[4]);
   const int nvar_max = atoi(argv[5]);
   // If fit_constant true, which i'm assuming for now add 1 to cols
-  double **A = new double*[rows]; // Input matrix
-  double **A2 = new double*[rows];
+  double A[rows*cols]; // Input matrix
+  double A2[rows*cols];
   //  double A2[rows][cols]; //Input matrix for other methods
   double y[rows];
   double weights[rows];
@@ -226,12 +227,12 @@ int main(int argc, char* argv[]) {
   std::ifstream file;
   file.open(argv[1]);
   for(int i=0; i<rows; i++) {
-    A[i] = new double[cols];
-    A2[i] = new double[cols];
+    //    A[i] = new double[cols];
+    //    A2[i] = new double[cols];
     for(int j=0; j<cols+1; j++) {
       if(j<cols-1) {
-	file >> A[i][j];
-	A2[i][j] = A[i][j];
+	file >> A[i*cols+j];
+	A2[i*cols+j] = A[i*cols+j];
       } else if(j==cols-1) {
 	file >> weights[i];
       } else {
