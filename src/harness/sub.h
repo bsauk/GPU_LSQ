@@ -15,4 +15,9 @@ void shell(int* l, int n);
 
 void report(int nv, double ssq, int max_size, double* bound, int nbest, double** ress, int* vorder, int** lopt);
 
+void magma_forwrd(int m, int n, double* A, double* B, int max_size);
+
+void dn_forwrd(int m, int n, double* A, double* B, int max_size);
+
+
 #endif

@@ -118,7 +118,7 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
   double endForwrd = CycleTimer::currentSeconds();
   std::cout << "Forwrd took " << 1000.f*(endForwrd-startForwrd) << std::endl;
-
+  /*
   for(int i=first; i<max_size; i++) {
     std::cout << "Best subsets found of " << i << " variables" << std::endl;
     std::cout << "     R.S.S.          Variable numbers" << std::endl;
@@ -131,7 +131,7 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
       std::cout << std::endl;
     }
   }
-
+  */
 }
 
 int main(int argc, char* argv[]) {
@@ -171,12 +171,15 @@ int main(int argc, char* argv[]) {
   const int nbest = atoi(argv[4]);
   const int nvar_max = atoi(argv[5]);
   // If fit_constant true, which i'm assuming for now add 1 to cols
-  double A[rows*cols]; // Input matrix
-  double A2[rows*cols];
-  //  double A2[rows][cols]; //Input matrix for other methods
-  double y[rows];
+  double Agold[rows*cols]; // Input matrix
+  double Amagma[rows*cols];
+  double Adn[rows*cols];
+
+  double yGold[rows];
+  double yMagma[rows];
+  double yDN[rows];
+
   double weights[rows];
-  double b[rows]; // Output vector for Ax = b for other algorithms 
   bool fit_const = true;
   int max_size, lopt_dim1;
   double vlarge = 1.79769e308;
@@ -227,31 +230,46 @@ int main(int argc, char* argv[]) {
   std::ifstream file;
   file.open(argv[1]);
   for(int i=0; i<rows; i++) {
-    //    A[i] = new double[cols];
-    //    A2[i] = new double[cols];
     for(int j=0; j<cols+1; j++) {
       if(j<cols-1) {
-	file >> A[i*cols+j];
-	A2[i*cols+j] = A[i*cols+j];
+	file >> Agold[i*cols+j];
+	//	Amagma[i*cols+j] = A[i*cols+j];
+	//	Adn[i*cols+j] = A[i*cols+j];
       } else if(j==cols-1) {
 	file >> weights[i];
       } else {
-	file >> y[i];
-	b[i] = y[i];
+	file >> yGold[i];
+	//	b[i] = y[i];
       }
     } 
   }
   file.close();
+
+  memcpy(Amagma, Agold, rows*cols*sizeof(double));
+  memcpy(Adn, Agold, rows*cols*sizeof(double));
+  memcpy(yMagma, yGold, rows*sizeof(double));
+  memcpy(yDN, yGold, rows*sizeof(double));
   // CPU sequential subset methodology copied from Fortran implementation
   double startGold = CycleTimer::currentSeconds();
   for(int i=0; i<1; i++) {
-    subset_gold(A, weights, y, rows, cols, nbest, max_size, ressGold, loptGold, boundGold);
+    subset_gold(Agold, weights, yGold, rows, cols, nbest, max_size, ressGold, loptGold, boundGold);
   }
   double endGold = CycleTimer::currentSeconds();
   if(check) compare_results(1, max_size, nbest, lopt_dim1, ressGold, ressGPU, loptGold, loptGPU);
   
   std::cout << "Overall Time: " << 1000.f*(endGold-startGold) << " ms" << std::endl;
-  
+  /*
+
+  for(int i=0; i<1; i++) {
+    dn_forwrd(rows, cols, Adn, yDN, max_size);
+  }
+  std::cout << "cuSolverDN didn't seg fault?" << std::endl;
+
+  for(int i=0; i<1; i++) {
+    magma_forwrd(rows, cols,  Amagma, yMagma, max_size);
+  }
+  std::cout << "MAGMA didn't seg fault?" << std::endl;
+  */  
   return 0;
 }
 
