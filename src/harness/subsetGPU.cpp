@@ -34,6 +34,8 @@ Inputs for this function are:
 
 void compare_results(int first, int max_size, int nbest, int lopt_dim1, double** ressGold, double** ressGPU, int** loptGold, int** loptGPU);
 
+void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound);
+/*
 void subset_gold(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound) {
 
   int nvar = cols-1, nobs = 0, r_dim = cols*(cols-1)/2, max_cdim = max_size*(max_size+1)/2;
@@ -129,12 +131,13 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
       std::cout << std::endl;
     }
   }
-  */
+  
 
 }
+*/
 
 int main(int argc, char* argv[]) {
-    std::cout.precision(16); //16 digit precision to match up with Fortran implementation move to header
+  std::cout.precision(16); //16 digit precision to match up with Fortran implementation move to header
 
   // Error handling for # of inputs  
   if(argc == 1) {
@@ -244,17 +247,17 @@ int main(int argc, char* argv[]) {
   }
   file.close();
 
-  memcpy(Amagma, Agold, rows*cols*sizeof(double));
-  memcpy(Adn, Agold, rows*cols*sizeof(double));
-  memcpy(yMagma, yGold, rows*sizeof(double));
-  memcpy(yDN, yGold, rows*sizeof(double));
+  //  memcpy(Amagma, Agold, rows*cols*sizeof(double));
+  //  memcpy(Adn, Agold, rows*cols*sizeof(double));
+  //  memcpy(yMagma, yGold, rows*sizeof(double));
+  //  memcpy(yDN, yGold, rows*sizeof(double));
   // CPU sequential subset methodology copied from Fortran implementation
   double startGold = CycleTimer::currentSeconds();
   for(int i=0; i<1; i++) {
     gpu_lsq(Agold, weights, yGold, rows, cols, nbest, max_size, ressGold, loptGold, boundGold);
   }
   double endGold = CycleTimer::currentSeconds();
-  if(check) compare_results(1, max_size, nbest, lopt_dim1, ressGold, ressGPU, loptGold, loptGPU);
+  //  if(check) compare_results(1, max_size, nbest, lopt_dim1, ressGold, ressGPU, loptGold, loptGPU);
   
   std::cout << "Overall Time: " << 1000.f*(endGold-startGold) << " ms" << std::endl;
 

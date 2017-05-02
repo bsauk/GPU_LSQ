@@ -4,8 +4,10 @@
 #include <fstream>
 #include <sstream>
 #include <math.h>
-#include "lsq.h"
-#include "sub.h"
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <driver_functions.h>
 
 #include "CycleTimer.h"
 
@@ -15,63 +17,71 @@ static inline int updiv(int n, int d) {
   return (n+d-1)/d;
 }
 
-void __global__ includGPU(int rows, int cols, double* dA, double* dY, double* dD, double* dR, double* dRHS, double* dSSERR, double* dWeights) {
-
-  __shared__ double dXblock[(NB+1)*NB];
-  
-  //  int idx = blockIdx.x*blockDim.x+threadIdx.x;
-  //  int jdx = blockIdx.y*blockDim.y+threadIdx.y;
-  //  double vsmall = 2.225e-307;
-  //  int nextr = 0;
-  //  double w = dWeights[blockIdx.x*blockDim.x+threadIdx.x], xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00;
-  printf("hello from device!\n");
-  for(int i=0; i<blockDim.x; i++) {
-    if(threadIdx.y == 0 && blockIdx.x == i) {
-      dXblock[threadIdx.x*blockDim.x+threadIdx.y] = 1.0; // Obviously threadIdx.y = 0 but I included for consistency with later
-      dXblock[threadIdx.x*blockDim.x+threadIdx.y+NB] = dA[threadIdx.x*blockDim.x+threadIdx.y+NB]; // this is the call to get the nb+1 element into dxblock
-    } else if(blockIdx.y == i) {
-      dXblock[threadIdx.x*blockDim.x+threadIdx.y] = dA[threadIdx.x*blockDim.x+threadIdx.y-1];
-    }
-    printf("dXblock[%d*%d+%d] = %f\n", threadIdx.x, blockDim.x, threadIdx.y, dXblock[threadIdx.x*blockDim.x+threadIdx.y]);
+__device__ __inline__ int dmin(int a, int b) {
+  if(a>b) {
+    return b;
+  } else {
+    return a;
   }
-
 }
 
-/*
-void includ(double weight, double* xrow, double y, int cols, double* D, double* r, double* rhs, double* sserr) {
+
+__global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD, double* dR, double* dRHS, double* dSSERR, double* dWeights, int blocks) {
+  __shared__ double dXblock[(NB+1)*NB];
+  
+  const int idx = blockIdx.x*blockDim.x+threadIdx.x; // Maps to rows
+  const int jdx = blockIdx.y*blockDim.y+threadIdx.y; // Maps to columns
   double vsmall = 2.225e-307;
   int nextr = 0;
-  double w = weight;
-  double xk = 0.00;
-  double di = 0.00;
-  double cbar = 0.00;
-  double sbar = 0.00;
-  double xi = 0.0;
-  for(int i=0; i<cols; i++) {
-    if(fabs(w) < vsmall) return;
-    xi = xrow[i];
-    if(fabs(xi) < vsmall) {
-      nextr = nextr+cols-i-1;
-    } else {
-      di = D[i];
-      cbar = di/(di+w*xi*xi);
-      sbar = w*xi/(di+w*xi*xi);
-      D[i] = di+w*xi*xi;
-      w = cbar*w;
-      for(int k=i+1; k<cols; k++) {
-	xk = xrow[k];
-	xrow[k] = xk-xi*r[nextr];
-	r[nextr] = cbar*r[nextr]+sbar*xk;
-	nextr++;
+  int offset = dmin(NB, cols-threadIdx.y*blockDim.y);
+  double w = 0.0, xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00;
+  if(idx >= rows || jdx >= cols) return;
+  for(int blk=0; blk<blocks; blk++) {
+    if(threadIdx.y == 0 && blockIdx.x == blk) {
+      dXblock[threadIdx.x*blockDim.x+threadIdx.y] = 1.0; // Obviously threadIdx.y = 0 but I included for consistency with later
+      dXblock[threadIdx.x*blockDim.x+threadIdx.y+offset] = dA[threadIdx.x*cols+threadIdx.y+offset]; // this is the call to get the nb+1 element into dxblock
+    } else if(blockIdx.x == blk) {
+      dXblock[threadIdx.x*blockDim.x+threadIdx.y] = dA[idx*cols+threadIdx.y-1];
+    }
+    w = dWeights[idx];
+    for(int j=0; j<cols; j++) {
+      di = dD[j];
+      if(fabs(w) < vsmall) return;
+      for(int i=0; i<threadIdx.x+1; i++) {
+	xi = dXblock[i*blockDim.x]; // Have 32 threads repeat work so they don't sit idle and will all return if need to
+	if(fabs(xi) < vsmall) {
+	  nextr = nextr+offset-i*blockDim.y-1;
+	} else {
+	  w = dWeights[idx];
+	  cbar = di/(di+w*xi*xi);
+	  sbar = w*xi/(di+w*xi*xi);
+	  di = di*w*xi*xi;
+	}
       }
-      xk = y;
-      y = xk-xi*rhs[i];
-      rhs[i] = cbar*rhs[i]+sbar*xk;
+      if(threadIdx.x*blockDim.x+threadIdx.y == 0) { // This is to prevent contention and have every thread in the block write to these values
+	dD[j] = di;
+	w = cbar*w;
+      }
+      __syncthreads();
+      if(jdx > j) {
+	xk = dXblock[idx*blockDim.x+jdx];
+	dXblock[idx*blockDim.x+jdx] = xk-xi*dR[nextr+jdx];
+	dR[nextr+jdx] = cbar*dR[nextr+jdx]+sbar*xk;
+	nextr = nextr+cols-j;
+      }
+      if(jdx == 0) {
+	xk = dY[idx];
+	dY[idx] = xk-xi*dRHS[j];
+	dRHS[j] = cbar*dRHS[j]+sbar*xk;
+      }
+    }
+    if(jdx==0) {
+      dSSERR[0] = dSSERR[0]+dWeights[idx]*dY[idx]*dY[idx];
+      printf("dSSERR = %f\n", dSSERR[0]);
     }
   }
-  sserr[0] = sserr[0]+w*y*y;
-}    
-*/
+}
+
 void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound) {
   /*
   int nvar = cols-1, nobs = 0, r_dim = cols*(cols-1)/2, max_cdim = max_size*(max_size+1)/2;
@@ -104,7 +114,6 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   double* dRHS = NULL; //cols
   double* dSSERR = NULL; // cols
   double* dWeights = NULL; //rows
-
   cudaMalloc((void **)&dA, rows*cols*sizeof(double));
   cudaMalloc((void **)&dY, rows*sizeof(double));
   cudaMalloc((void **)&dD, cols*sizeof(double));
@@ -119,7 +128,8 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   
   dim3 threadsPerBlock(NB,NB);
   dim3 blocks(updiv(rows, NB), updiv(cols, NB));
-  includGPU<<<blocks, threadsPerBlock>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights); 
+  includGPU<<<blocks, threadsPerBlock>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights, blocks.x); 
+  cudaDeviceSynchronize();
   /****************************************************************
   // This part gets translated into CUDA device code.
   for(int i=0; i<rows; i++) {
