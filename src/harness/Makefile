@@ -28,3 +28,11 @@ all:
 
 #subset:
 #	g++ -g find_sub.cpp lsq.cpp selection.cpp benchmark.cpp -o sub
+
+
+subset2:
+	g++ -g find_sub.cpp lsq.cpp selection.cpp benchmark.cpp -o test.out
+
+gpusub: gpuLSQ.o
+	$(CUDADIR)/bin/nvcc -g find_sub.cpp lsq.cpp subsetGPU.cpp benchmark.cpp gpuLSQ.o -o gpusub.out
+

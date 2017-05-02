@@ -19,9 +19,10 @@ Developed by bsauk on 4/17/17
 #include <fstream>
 #include <sstream>
 #include <math.h>
+#include "CycleTimer.h"
 
-#define MAXVAR 1500 // Problem specific, number of variables in equation can adjust these values
-#define MAXCASES 5000 // Problem specific, number of trials
+//#define MAXVAR 1500 // Problem specific, number of variables in equation can adjust these values
+//#define MAXCASES 5000 // Problem specific, number of trials
 
 // This will need to be parallelized
 void includ(double weight, double* xrow, double y, int cols, double* D, double* r, double* rhs, double* sserr) {
@@ -36,7 +37,7 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
   for(int i=0; i<cols; i++) {
     if(fabs(w) < vsmall) return;
     xi = xrow[i];
-    if(fabs(xi) < vsmall) {
+    if(fabs(xi) < vsmall) { // Case for ill-conditioned matrices
       nextr = nextr+cols-i-1;
     } else {
       di = D[i];

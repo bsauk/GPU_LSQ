@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
   // CPU sequential subset methodology copied from Fortran implementation
   double startGold = CycleTimer::currentSeconds();
   for(int i=0; i<1; i++) {
-    subset_gold(Agold, weights, yGold, rows, cols, nbest, max_size, ressGold, loptGold, boundGold);
+    gpu_lsq(Agold, weights, yGold, rows, cols, nbest, max_size, ressGold, loptGold, boundGold);
   }
   double endGold = CycleTimer::currentSeconds();
   if(check) compare_results(1, max_size, nbest, lopt_dim1, ressGold, ressGPU, loptGold, loptGPU);

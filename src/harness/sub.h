@@ -19,5 +19,7 @@ void magma_forwrd(int m, int n, double* A, double* B, int max_size);
 
 void dn_forwrd(int m, int n, double* A, double* B, int max_size);
 
+void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound);
+
 
 #endif

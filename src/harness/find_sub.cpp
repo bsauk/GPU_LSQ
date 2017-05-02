@@ -263,9 +263,9 @@ void report(int nv, double ssq, int max_size, double* bound, int nbest, double**
     if(ssq < (ress[nv][rank])*above1) {
       std::copy(vorder, vorder+nv+1, lists);
       shell(lists, nv);
-      if(ssq > ress[nv][rank]*under1) {
+      if(ssq > (ress[nv][rank])*under1) {
 	for(int i=0; i<nv; i++) {
-	  lists2[i] = lopt[nv][pos1+i];
+	  lists2[i] = lopt[rank][pos1+i];
 	}
 	if(same_vars(lists, lists2, nv)) break;
       }
