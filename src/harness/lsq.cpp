@@ -49,6 +49,7 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
 	xk = xrow[k];
 	xrow[k] = xk-xi*r[nextr];
 	r[nextr] = cbar*r[nextr]+sbar*xk;
+	std::cout << "r[" << nextr << "] = " << r[nextr] << std::endl;
 	nextr++;
       }
       xk = y;

@@ -43,3 +43,6 @@ $(OBJDIR)/%.o: %.cpp
 
 $(OBJDIR)/%.o: %.cu
 	nvcc $< $(NVCCFLAGS) -c -o $@
+
+gold: 
+	g++ lsq.cpp find_sub.cpp selection.cpp benchmark.cpp -o gold

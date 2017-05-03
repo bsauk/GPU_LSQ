@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
   const int nbest = atoi(argv[4]);
   const int nvar_max = atoi(argv[5]);
   // If fit_constant true, which i'm assuming for now add 1 to cols
-  double Agold[rows*cols]; // Input matrix
+  double Agold[rows*(cols+1)]; // Input matrix Changed to cols+1 for adding a column of 1s
   double Amagma[rows*cols];
   double Adn[rows*cols];
 
@@ -232,12 +232,14 @@ int main(int argc, char* argv[]) {
   std::ifstream file;
   file.open(argv[1]);
   for(int i=0; i<rows; i++) {
-    for(int j=0; j<cols+1; j++) {
-      if(j<cols-1) {
+    for(int j=0; j<cols+2; j++) {
+      if(j==0) {
+	Agold[i*cols+j] = 1.0;
+      } else if(j<cols) {
 	file >> Agold[i*cols+j];
 	//	Amagma[i*cols+j] = A[i*cols+j];
 	//	Adn[i*cols+j] = A[i*cols+j];
-      } else if(j==cols-1) {
+      } else if(j==cols) {
 	file >> weights[i];
       } else {
 	file >> yGold[i];
