@@ -67,7 +67,8 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
     double startInclud = CycleTimer::currentSeconds();
     includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
     double endInclud = CycleTimer::currentSeconds();
-    std::cout << "Includ for " << i << " = " << 1000.f*(endInclud-startInclud) << " ms" << std::endl;
+    std::cout << "SSERR = " << *sserr << std::endl;
+    //    std::cout << "Includ for " << i << " = " << 1000.f*(endInclud-startInclud) << " ms" << std::endl;
   }
   //  std::cout << "sserr = " << sserr[0] << std::endl;
   nobs = rows;
