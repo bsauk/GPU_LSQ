@@ -10,7 +10,8 @@ CFLAGS        = -g -Wall
 LDFLAGS       = 
 NVCCFLAGS     = -O0 -g -G -m64 --gpu-architecture compute_35
 LDFLAGS       = -L/usr/local/cuda/lib64/ -lcudart
-
+NVCC          = /usr/local/cuda-7.5/bin/nvcc #This is used for testing on own computer
+#NVCC         = nvcc  # This is used for gates and latedays
 #LIBBLAS     = -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
 
 #MAGMA_CFLAGS = -DADD_ -g -G -I$(MAGMADIR)/include -I$(CUDADIR)/include 
@@ -42,7 +43,7 @@ $(OBJDIR)/%.o: %.cpp
 	g++ $< -g -c -o $@
 
 $(OBJDIR)/%.o: %.cu
-	nvcc $< $(NVCCFLAGS) -c -o $@
+	$(NVCC) $< $(NVCCFLAGS) -c -o $@
 
 gold: 
 	g++ -g lsq.cpp find_sub.cpp selection.cpp benchmark.cpp -o gold

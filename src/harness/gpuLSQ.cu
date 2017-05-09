@@ -11,7 +11,7 @@
 
 #include "CycleTimer.h"
 
-#define NB 4
+#define NB 2
 #define COLUMNS 500 // Assumed to be 500 for testing purposes currently.
 
 /*
@@ -30,8 +30,9 @@ __device__ __inline__ int dmin(int a, int b) {
 
 // As of 5:03pm on 5/8 this version calculates dR and dA correctly. However, currently dWeights, and dY are not outputting correctly.
 // This also causes dSSERR to output incorrectly because of incorrect inputs. It also appears that dD and dRHS are not currently calculated correctly. 
+// Update as of 11:45am 5/9 this version calculates all values correctly when NB = Matrix Size. Now working on cases when NB < Matrix Size.
 
-__global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD, double* dR, double* dRHS, double* dSSERR, double* dWeights) {
+__global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD, double* dR, double* dRHS, double* dSSERR, double* dWeights, int r_dim) {
 
   __shared__ double dXblock[(NB)*COLUMNS];
   __shared__ double sD[COLUMNS];
@@ -62,17 +63,18 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
     
     for(int j=0; j<cols; j++) { // j < cols
       __syncthreads();
-      di = sD[j];
-      RHSi = sRHS[j];
       if(fabs(w) < vsmall) {
 	dWeights[i] = w;
 	dY[i] = yi;
 	smallW = true;
+      } else {	
+	di = sD[j];
+	RHSi = sRHS[j];
       }
       for(int k=0; k<threadIdx.x+1; k++) {
 	xi = dXblock[k*blockDim.x+j]; 
+	w = dWeights[k];
 	if(fabs(xi) >= vsmall && !smallW) {
-	  w = dWeights[k];
 	  if(fabs(w) >= vsmall) {
 	    yi = dY[k];
 	    cbar = di/(di+w*xi*xi);
@@ -97,35 +99,42 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	}
 	__syncthreads();
       }
-      
-      if(!smallW) {
-	nextr = nextr+cols-j-1;
-	if(threadIdx.x == rowsLeft-1) {
+      nextr = nextr+cols-j-1;
+      for(int rowBlock=0; rowBlock<NB; rowBlock++) {
+	if(!smallW) {
+	  //	if(threadIdx.x == rowsLeft-1) {
 	  for(int l=jdx; l<perRow; l+=blockDim.y) {
-	    if(l == j) {
+	    if(l == j && rowBlock == threadIdx.x) {
 	      sD[l] = di;
 	      sRHS[l] = RHSi;
 	    }
 	  }
-	} 	  
-	if(threadIdx.y == cols-1) {// Currently this doesn't work need to fix.
-	  dWeights[i] = w;
-	  dY[i] = yi;
-	}	
-      } 
-      
-      for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
-	dA[i*cols+colBlock] = dXblock[threadIdx.x*blockDim.x+colBlock];
+	}
       }
+      if(threadIdx.y == cols-1 && fabs(xi) >= vsmall) {
+	dWeights[i] = w;
+	dY[i] = yi;
+      }	
+    }
+    for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
+      dA[i*cols+colBlock] = dXblock[threadIdx.x*blockDim.x+colBlock];
     }
     // This will move the values stored in the shared state to the global variables, that I will need later!
     for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
       dD[j] = sD[threadIdx.y];
       dRHS[j] = sRHS[threadIdx.y];
-      printf("dD[%d]=%f dRHS[%d]=%f\n", j, dD[j], j, dRHS[j]);
     }
   }
   __syncthreads();
+
+  if(idx==0 && jdx == 0) {
+    for(int i=0; i<r_dim; i++) {
+      printf("dR[%d]=%f\n", i, dR[i]);
+    }
+    for(int i=0; i<cols; i++) {
+      printf("D[%d]=%f rhs[%d]=%f\n", i, dD[i], i, dRHS[i]);
+    }
+  }
 
   if(jdx==0 && idx==0) {
     for(int i=0; i<rows; i++) {
@@ -187,7 +196,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
 
   dim3 threadsPerBlock(NB,NB);
   dim3 blocks(1, 1);
-  includGPU<<<blocks, threadsPerBlock>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights);
+  includGPU<<<blocks, threadsPerBlock>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights, r_dim);
   cudaDeviceSynchronize();
   /****************************************************************
   // This part gets translated into CUDA device code.
