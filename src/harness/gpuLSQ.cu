@@ -12,10 +12,13 @@
 #include "CycleTimer.h"
 
 #define NB 4
+#define COLUMNS 500 // Assumed to be 500 for testing purposes currently.
 
+/*
 static inline int updiv(int n, int d) {
   return (n+d-1)/d;
 }
+*/
 
 __device__ __inline__ int dmin(int a, int b) {
   if(a>b) {
@@ -25,38 +28,38 @@ __device__ __inline__ int dmin(int a, int b) {
   }
 }
 
-// As of 4:41pm on 5/3 I have been debugging for the simplified case with smaller loops. This is just to make sure the basic idea works.
-// I believe that up to nextr is correct currently!
+// As of 5:03pm on 5/8 this version calculates dR and dA correctly. However, currently dWeights, and dY are not outputting correctly.
+// This also causes dSSERR to output incorrectly because of incorrect inputs. It also appears that dD and dRHS are not currently calculated correctly. 
 
-__global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD, double* dR, double* dRHS, double* dSSERR, double* dWeights, int blocks) {
+__global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD, double* dR, double* dRHS, double* dSSERR, double* dWeights) {
 
-  __shared__ double dXblock[(NB)*NB];
-  __shared__ double sWeights[NB];
-  __shared__ double sY[NB];
-  __shared__ double sD[NB];
-  __shared__ double sRHS[NB];
+  __shared__ double dXblock[(NB)*COLUMNS];
+  __shared__ double sD[COLUMNS];
+  __shared__ double sRHS[COLUMNS];
 
   const int idx = blockIdx.x*blockDim.x+threadIdx.x; // Maps to rows
   const int jdx = blockIdx.y*blockDim.y+threadIdx.y; // Maps to columns
   double vsmall = 2.225e-307;
   int nextr = 0;
-  int offset = dmin(NB, cols-threadIdx.y-blockIdx.y*blockDim.y);
+  int perRow = dmin(COLUMNS, cols); // Currently should not work accurately if COLUMNS < cols
   double w = 0.0, xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00, tempR = 0.00, RHSi = 0.0, xy = 0.00, yi = 0.00;
+  bool smallW = false;
+  if(idx >= blockDim.x || jdx >= blockDim.y ) return;
+  if(threadIdx.x == 0) {
+    for(int i=threadIdx.y; i<perRow; i+=blockDim.y) { 
+      sD[i] = dD[i];
+      sRHS[i] = dRHS[i];
+    }
+  }
 
-  if(idx >= blockDim.x || jdx > cols) return;
-  sD[threadIdx.x] = dD[idx];
-  sRHS[threadIdx.x] = dRHS[idx];
-  
   for(int i=threadIdx.x; i<rows; i+=blockDim.x) { // i<rows
-    dXblock[threadIdx.x*blockDim.x+threadIdx.y] = dA[i*cols+jdx];
-    if(threadIdx.y == 0) {
-      sWeights[threadIdx.x] = dWeights[i];
-      sY[threadIdx.x] = dY[i];
-    } 
-    int rowsLeft = dmin(NB, rows-i*blockDim.x);
-    w = sWeights[threadIdx.x];
-    yi = sY[threadIdx.x];
-    __syncthreads();
+    for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
+      dXblock[threadIdx.x*blockDim.x+j] = dA[i*cols+j];
+    }
+    int rowsLeft = dmin(NB, rows-i+threadIdx.x);
+    
+    w = dWeights[threadIdx.x];
+    yi = dY[threadIdx.x];
     
     for(int j=0; j<cols; j++) { // j < cols
       __syncthreads();
@@ -65,79 +68,75 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
       if(fabs(w) < vsmall) {
 	dWeights[i] = w;
 	dY[i] = yi;
-	break;
+	smallW = true;
+	//	break; // Not using break as it will not allow me to use syncthreads properly
       }
-      tempR = dR[nextr+jdx];
-      for(int k=0; k<threadIdx.x+1; k++) { // k < threadIdx.x+1
-	__syncthreads();
-	if(j < (blockIdx.y+1)*blockDim.y && j > blockIdx.y*blockDim.y || j==0 && jdx < NB) {
-	  xi = dXblock[k*blockDim.x+j]; // Have 32 threads repeat work so they don't sit idle and will all return if need to
-	} else {
-	  xi = dA[k*cols+j]; // dA does not have a column of 1's so this doesn't work. Workaround, if j==0, xi = 1;
-	}
-	if(jdx > j) {
-	  xk = dXblock[k*blockDim.x+threadIdx.y];
-	}
-	if(fabs(xi) < vsmall) {
-	  nextr = nextr+cols-j-1;
-	} else {
-	  w = sWeights[k];
-	  yi = sY[k];
+      for(int k=0; k<threadIdx.x+1; k++) {
+	xi = dXblock[k*blockDim.x+j]; 
+	if(fabs(xi) >= vsmall && !smallW) {
+	  w = dWeights[k];
+	  yi = dY[k];
 	  cbar = di/(di+w*xi*xi);
 	  sbar = w*xi/(di+w*xi*xi);
 	  di = di+w*xi*xi;
-
-	  if(jdx > j) {
-	    if(idx == k) {
-	      dXblock[k*blockDim.x+threadIdx.y] = xk-xi*tempR;
-	      dA[k*cols+jdx] = xk-xi*tempR;  // How do we ensure that no thread accesses this data before this value is updated?
+	  for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
+	    if(colBlock > j) {
+	      tempR = dR[nextr+colBlock-j-1];
+	      xk = dXblock[k*blockDim.x+colBlock];
+	      if(k == threadIdx.x) {
+		dXblock[k*blockDim.x+colBlock] = xk-xi*tempR;
+		dR[nextr+colBlock-j-1] = cbar*tempR+sbar*xk;
+	      }
+	      tempR = cbar*tempR+sbar*xk;
 	    }
-	    tempR = cbar*tempR+sbar*xk;
-	    if(k == threadIdx.x) nextr = nextr+cols-j-1;
 	  }
-
 	  w = cbar*w;
 	  xy = yi;
 	  yi = xy-xi*RHSi;
 	  RHSi = cbar*RHSi+sbar*xy;
 	}
+	__syncthreads();
       }
-      if(threadIdx.x == rowsLeft-1) {
-	sD[threadIdx.y] = di;
-	sRHS[threadIdx.y] = RHSi;
+      
+      if(!smallW) {
+	nextr = nextr+cols-j-1;
+	//	if(threadIdx.x == rowsLeft-1) {
+	for(int rowOrder=0; rowOrder<NB; rowOrder++) {
+	  for(int l=jdx; l<perRow; l+=blockDim.y) {
+	    if(l == j && rowOrder == threadIdx.x) {
+	      sD[l] = di;
+	      sRHS[l] = RHSi;
+	    }
+	  }
+	    //	  }
+	} 	  
+	if(threadIdx.y == cols-1) {// Currently this doesn't work need to fix.
+	  dWeights[i] = w;
+	  dY[i] = yi;
+	}	
+      } 
+      
+      for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
+	dA[i*cols+colBlock] = dXblock[threadIdx.x*blockDim.x+colBlock];
       }
     }
-    if(jdx == cols) { // Idea here is that we need all threads in the row to have grabbed these values before we update. 
-      dWeights[i] = w;
-      dY[i] = yi;
+    // This will move the values stored in the shared state to the global variables, that I will need later!
+    for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
+      dD[j] = sD[threadIdx.y];
+      dRHS[j] = sRHS[threadIdx.y];
+      printf("dD[%d]=%f dRHS[%d]=%f\n", j, dD[j], j, dRHS[j]);
     }
   }
-  
-  // This will move the values stored in the shared state to the global variables, that I will need later!
-  dD[jdx] = sD[threadIdx.y];
-  dRHS[jdx] = sRHS[threadIdx.y];
-
-  for(int i=threadIdx.x; i<rows; i+=blockDim.x) {
-    dA[i*cols+jdx] = dXblock[i*blockDim.x+threadIdx.y];
-  }
-
-  if(idx==0 && jdx==0) {
-    for(int i=0; i<rows; i++) {
-      for(int j=0; j<cols; j++) {
-	printf("dA(%d,%d) = %f\n", i,j,dA[i*cols+j]);
-      }
-    }
-  }
+  __syncthreads();
 
   if(jdx==0 && idx==0) {
     for(int i=0; i<rows; i++) {
       dSSERR[0] = dSSERR[0]+dWeights[i]*dY[i]*dY[i];
-      //      atomicAdd(dSSERR, dWeights[idx]*dY[idx]*dY[idx]);
-      //     printf("dWeights[%d] = %f\n", i, dWeights[i]);
+      printf("dSSERR[%d]=%f dWeights[%d]=%f dY[%d]=%f\n", i, dSSERR[0], i, dWeights[i], i, dY[i]);
     }
   }
 } 
-  
+
 void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound) {
   /*
   int nvar = cols-1, nobs = 0, r_dim = cols*(cols-1)/2, max_cdim = max_size*(max_size+1)/2;
@@ -189,8 +188,8 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   cudaMemset(dSSERR, 0.00, sizeof(double));
 
   dim3 threadsPerBlock(NB,NB);
-  dim3 blocks(updiv(rows, NB), updiv(cols, NB));
-  includGPU<<<blocks, threadsPerBlock>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights, blocks.x); 
+  dim3 blocks(1, 1);
+  includGPU<<<blocks, threadsPerBlock>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights);
   cudaDeviceSynchronize();
   /****************************************************************
   // This part gets translated into CUDA device code.

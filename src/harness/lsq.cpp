@@ -35,7 +35,9 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
   double sbar = 0.00;
   double xi = 0.0;
   for(int i=0; i<cols; i++) {
-    if(fabs(w) < vsmall) return;
+    if(fabs(w) < vsmall) {
+      return;
+    }
     xi = xrow[i];
     if(fabs(xi) < vsmall) { // Case for ill-conditioned matrices
       nextr = nextr+cols-i-1;
@@ -56,6 +58,7 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
       rhs[i] = cbar*rhs[i]+sbar*xk;
     }
   }
+  std::cout << "w = " << w << std::endl;
   sserr[0] = sserr[0]+w*y*y;
 }    
 
