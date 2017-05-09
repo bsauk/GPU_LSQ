@@ -43,7 +43,6 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
   int nextr = 0;
   int perRow = dmin(COLUMNS, cols); // Currently should not work accurately if COLUMNS < cols
   double w = 0.0, xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00, tempR = 0.00, RHSi = 0.0, xy = 0.00, yi = 0.00;
-  bool smallW = false;
   if(idx >= blockDim.x || jdx >= blockDim.y ) return;
   if(threadIdx.x == 0) {
     for(int i=threadIdx.y; i<perRow; i+=blockDim.y) { 
@@ -57,7 +56,7 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
       dXblock[threadIdx.x*blockDim.x+j] = dA[i*cols+j];
     }
     int rowsLeft = dmin(NB, rows-i+threadIdx.x);
-    
+    bool smallW = false;
     w = dWeights[threadIdx.x];
     yi = dY[threadIdx.x];
     
@@ -69,46 +68,45 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	dWeights[i] = w;
 	dY[i] = yi;
 	smallW = true;
-	//	break; // Not using break as it will not allow me to use syncthreads properly
       }
       for(int k=0; k<threadIdx.x+1; k++) {
 	xi = dXblock[k*blockDim.x+j]; 
 	if(fabs(xi) >= vsmall && !smallW) {
 	  w = dWeights[k];
-	  yi = dY[k];
-	  cbar = di/(di+w*xi*xi);
-	  sbar = w*xi/(di+w*xi*xi);
-	  di = di+w*xi*xi;
-	  for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
-	    if(colBlock > j) {
-	      tempR = dR[nextr+colBlock-j-1];
-	      xk = dXblock[k*blockDim.x+colBlock];
-	      if(k == threadIdx.x) {
-		dXblock[k*blockDim.x+colBlock] = xk-xi*tempR;
-		dR[nextr+colBlock-j-1] = cbar*tempR+sbar*xk;
+	  if(fabs(w) >= vsmall) {
+	    yi = dY[k];
+	    cbar = di/(di+w*xi*xi);
+	    sbar = w*xi/(di+w*xi*xi);
+	    di = di+w*xi*xi;
+	    for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
+	      if(colBlock > j) {
+		tempR = dR[nextr+colBlock-j-1];
+		xk = dXblock[k*blockDim.x+colBlock];
+		if(k == threadIdx.x) {
+		  dXblock[k*blockDim.x+colBlock] = xk-xi*tempR;
+		  dR[nextr+colBlock-j-1] = cbar*tempR+sbar*xk;
+		}
+		tempR = cbar*tempR+sbar*xk;
 	      }
-	      tempR = cbar*tempR+sbar*xk;
 	    }
+	    w = cbar*w;
+	    xy = yi;
+	    yi = xy-xi*RHSi;
+	    RHSi = cbar*RHSi+sbar*xy;
 	  }
-	  w = cbar*w;
-	  xy = yi;
-	  yi = xy-xi*RHSi;
-	  RHSi = cbar*RHSi+sbar*xy;
 	}
 	__syncthreads();
       }
       
       if(!smallW) {
 	nextr = nextr+cols-j-1;
-	//	if(threadIdx.x == rowsLeft-1) {
-	for(int rowOrder=0; rowOrder<NB; rowOrder++) {
+	if(threadIdx.x == rowsLeft-1) {
 	  for(int l=jdx; l<perRow; l+=blockDim.y) {
-	    if(l == j && rowOrder == threadIdx.x) {
+	    if(l == j) {
 	      sD[l] = di;
 	      sRHS[l] = RHSi;
 	    }
 	  }
-	    //	  }
 	} 	  
 	if(threadIdx.y == cols-1) {// Currently this doesn't work need to fix.
 	  dWeights[i] = w;

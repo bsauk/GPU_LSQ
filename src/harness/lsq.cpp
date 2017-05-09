@@ -58,7 +58,6 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
       rhs[i] = cbar*rhs[i]+sbar*xk;
     }
   }
-  std::cout << "w = " << w << std::endl;
   sserr[0] = sserr[0]+w*y*y;
 }    
 
