@@ -41,7 +41,6 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
   const int idx = blockIdx.x*blockDim.x+threadIdx.x; // Maps to rows
   const int jdx = blockIdx.y*blockDim.y+threadIdx.y; // Maps to columns
   double vsmall = 2.225e-307;
-  int nextr = 0;
   int perRow = dmin(COLUMNS, cols); // Currently should not work accurately if COLUMNS < cols
   double w = 0.0, xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00, tempR = 0.00, RHSi = 0.0, xy = 0.00, yi = 0.00;
   if(idx >= blockDim.x || jdx >= blockDim.y ) return;
@@ -54,16 +53,17 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 
   for(int i=threadIdx.x; i<rows; i+=blockDim.x) { // i<rows
     for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
-      dXblock[threadIdx.x*blockDim.x+j] = dA[i*cols+j];
+      dXblock[threadIdx.x*perRow+j] = dA[i*cols+j];
     }
     int rowsLeft = dmin(NB, rows-i+threadIdx.x);
+    int nextr = 0;
     bool smallW = false;
-    w = dWeights[threadIdx.x];
-    yi = dY[threadIdx.x];
+    w = dWeights[i];
+    yi = dY[i];
     
     for(int j=0; j<cols; j++) { // j < cols
       __syncthreads();
-      if(fabs(w) < vsmall) {
+       if(fabs(w) < vsmall) {
 	dWeights[i] = w;
 	dY[i] = yi;
 	smallW = true;
@@ -71,31 +71,30 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	di = sD[j];
 	RHSi = sRHS[j];
       }
-      for(int k=0; k<threadIdx.x+1; k++) {
-	xi = dXblock[k*blockDim.x+j]; 
+      for(int k=i-threadIdx.x; k<i+1; k++) {
+	xi = dXblock[threadIdx.x*perRow+j]; 
 	w = dWeights[k];
-	if(fabs(xi) >= vsmall && !smallW) {
-	  if(fabs(w) >= vsmall) {
-	    yi = dY[k];
-	    cbar = di/(di+w*xi*xi);
-	    sbar = w*xi/(di+w*xi*xi);
-	    di = di+w*xi*xi;
-	    for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
-	      if(colBlock > j) {
-		tempR = dR[nextr+colBlock-j-1];
-		xk = dXblock[k*blockDim.x+colBlock];
-		if(k == threadIdx.x) {
-		  dXblock[k*blockDim.x+colBlock] = xk-xi*tempR;
-		  dR[nextr+colBlock-j-1] = cbar*tempR+sbar*xk;
-		}
-		tempR = cbar*tempR+sbar*xk;
+	if(fabs(xi) >= vsmall && !smallW && fabs(w) >= vsmall) {
+	  yi = dY[k];
+	  cbar = di/(di+w*xi*xi);
+	  sbar = w*xi/(di+w*xi*xi);
+	  di = di+w*xi*xi;
+	  for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
+	    if(colBlock > j) {
+	      tempR = dR[nextr+colBlock-j-1];
+	      xk = dXblock[threadIdx.x*perRow+colBlock];
+	      if(k == i) {
+		dXblock[threadIdx.x*perRow+colBlock] = xk-xi*tempR;
+		dR[nextr+colBlock-j-1] = cbar*tempR+sbar*xk;
 	      }
+	      tempR = cbar*tempR+sbar*xk;
 	    }
-	    w = cbar*w;
-	    xy = yi;
-	    yi = xy-xi*RHSi;
-	    RHSi = cbar*RHSi+sbar*xy;
 	  }
+	  w = cbar*w;
+	  xy = yi;
+	  yi = xy-xi*RHSi;
+	  RHSi = cbar*RHSi+sbar*xy;
+	  printf("w=%f xi=%f D[%d]=%f\n", w, xi, j, di); // This shows that the first column is fine when split, but the other columns not so much :/.
 	}
 	__syncthreads();
       }
@@ -111,22 +110,24 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	  }
 	}
       }
-      if(threadIdx.y == cols-1 && fabs(xi) >= vsmall) {
-	dWeights[i] = w;
-	dY[i] = yi;
+      for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
+	if(colBlock == perRow-1 && fabs(xi) >= vsmall) {
+	  dWeights[i] = w;
+	  dY[i] = yi;
+	}
       }	
     }
     for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
-      dA[i*cols+colBlock] = dXblock[threadIdx.x*blockDim.x+colBlock];
+      dA[i*cols+colBlock] = dXblock[threadIdx.x*perRow+colBlock];
     }
     // This will move the values stored in the shared state to the global variables, that I will need later!
     for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
-      dD[j] = sD[threadIdx.y];
-      dRHS[j] = sRHS[threadIdx.y];
+      dD[j] = sD[j];
+      dRHS[j] = sRHS[j];
     }
   }
   __syncthreads();
-
+  /*
   if(idx==0 && jdx == 0) {
     for(int i=0; i<r_dim; i++) {
       printf("dR[%d]=%f\n", i, dR[i]);
@@ -135,7 +136,7 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
       printf("D[%d]=%f rhs[%d]=%f\n", i, dD[i], i, dRHS[i]);
     }
   }
-
+  */
   if(jdx==0 && idx==0) {
     for(int i=0; i<rows; i++) {
       dSSERR[0] = dSSERR[0]+dWeights[i]*dY[i]*dY[i];
