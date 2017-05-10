@@ -39,6 +39,7 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
       return;
     }
     xi = xrow[i];
+    std::cout<<"x["<<i<<"] = "<<xi<<std::endl;
     if(fabs(xi) < vsmall) { // Case for ill-conditioned matrices
       nextr = nextr+cols-i-1;
     } else {

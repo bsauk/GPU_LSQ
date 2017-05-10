@@ -78,6 +78,7 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
       }
       //      for(int k=i-threadIdx.x; k<i+1; k++) {
       for(int k=0; k<threadIdx.x+1; k++) {
+	if(
 	xi = dXblock[k*perRow+j]; 
 	w = dWeights[k+i-threadIdx.x];
 	if(fabs(xi) >= vsmall && !smallW && fabs(w) >= vsmall) {
