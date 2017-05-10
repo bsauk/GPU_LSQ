@@ -1,0 +1,21 @@
+1 singularities detected in predictor variables
+These variables are linearly related to earlier ones:
+Best subsets found of 1 variables
+     R.S.S.          Variable numbers
+460248.4690047051    0   6   
+520532.9979611507    0   7   
+Best subsets found of 2 variables
+     R.S.S.          Variable numbers
+323622.5635631303    0   6   8   
+339949.7483736006    0   1   6   
+QR-factorization is not singular
+Best subsets found of 1 variables
+     R.S.S.          Variable numbers
+148083710989.3026    0   7   
+192650865078.0853    0   1   
+Best subsets found of 2 variables
+     R.S.S.          Variable numbers
+191392752002.0414    0   1   2   
+8001428108214272    0   4   7   
+Gold Time: 0.4330133087933064 ms
+GPU Time: 2636.261259671301 ms

@@ -9,6 +9,7 @@ LD            = gcc
 CFLAGS        = -g -Wall
 LDFLAGS       = 
 NVCCFLAGS     = -O0 -g -G -m64 --gpu-architecture compute_35
+#NVCCFLAGS     = -O3 -m64 --gpu-architecture compute_35
 LDFLAGS       = -L/usr/local/cuda/lib64/ -lcudart
 NVCC          = /usr/local/cuda-7.5/bin/nvcc #This is used for testing on own computer
 #NVCC         = nvcc  # This is used for gates and latedays
