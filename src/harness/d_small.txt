@@ -1,0 +1,15 @@
+D[0] = 1
+Hello
+D[0] = 2
+D[1] = 33282
+Hello
+D[0] = 3
+D[1] = 161178
+D[3] = 407.8427763094217
+Hello
+D[0] = 4
+D[1] = 19159494.75
+D[2] = 0.01419598369106263
+Hello
+QR-factorization is not singular
+Overall Time: 0.3571938723325729 ms

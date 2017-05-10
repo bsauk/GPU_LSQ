@@ -47,7 +47,6 @@ void includ(double weight, double* xrow, double y, int cols, double* D, double* 
       sbar = w*xi/(di+w*xi*xi);
       D[i] = di+w*xi*xi;
       w = cbar*w;
-      std::cout << "w = " << w << " xi = " << xi << " D[" << i << "] = " << D[i] << std::endl;
       for(int k=i+1; k<cols; k++) {
 	xk = xrow[k];
 	xrow[k] = xk-xi*r[nextr];

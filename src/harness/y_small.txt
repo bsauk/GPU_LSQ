@@ -1,0 +1,10 @@
+y = 541
+Hello
+y = -17
+Hello
+y = 57.36046511627907
+Hello
+y = 63.38627480177195
+Hello
+QR-factorization is not singular
+Overall Time: 0.3558038733899593 ms

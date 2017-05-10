@@ -66,19 +66,13 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
     }
     double startInclud = CycleTimer::currentSeconds();
     includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
-    std::cout << "Hello" << std::endl;
-    for(int j=0; j<r_dim; j++) {
-      //      std::cout << "r[" << j << "] = " << r[j] << std::endl;
-    }
-    for(int k=0; k<cols; k++) {
-      //      std::cout << "D[" << k << "] = " << D[k] << " rhs[" << k << "] = " << rhs[k] << std::endl;
-    }
     double endInclud = CycleTimer::currentSeconds();
     //    std::cout << "SSERR = " << *sserr << std::endl;
     //    std::cout << "Includ for " << i << " = " << 1000.f*(endInclud-startInclud) << " ms" << std::endl;
   }
   //  std::cout << "sserr = " << sserr[0] << std::endl;
   nobs = rows;
+
   sing(lindep, ifault, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
 
   if(ifault[0] == 0) {
@@ -124,7 +118,7 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
   // The next part is that I will need to implement the different subset selection techniques, pick a few
   // Forward selection
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
-  /*
+
   for(int i=first; i<max_size; i++) {
     std::cout << "Best subsets found of " << i << " variables" << std::endl;
     std::cout << "     R.S.S.          Variable numbers" << std::endl;
@@ -137,7 +131,7 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
       std::cout << std::endl;
     }
   }
-  */
+
 
 }
 

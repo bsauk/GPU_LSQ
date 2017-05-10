@@ -25,7 +25,7 @@ NVCC          = /usr/local/cuda-7.5/bin/nvcc #This is used for testing on own co
 #	/usr/local/cuda-7.5/bin/nvcc magma_sub.o dn_sub.o find_sub.cpp lsq.cpp selection.cpp benchmark.cpp -o sub.out -lineinfo $(MAGMA_LIBS) 
 EXECUTABLE := gpusub
 OBJDIR=objs
-OBJS=$(OBJDIR)/subsetGPU.o $(OBJDIR)/gpuLSQ.o
+OBJS=$(OBJDIR)/subsetGPU.o $(OBJDIR)/gpuLSQ.o $(OBJDIR)/lsq.o $(OBJDIR)/find_sub.o
 
 default: $(EXECUTABLE)
 
