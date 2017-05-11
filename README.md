@@ -27,13 +27,14 @@ Having spent a while to ensure accuracy, the project will need some fine refinin
 Currently, the parallel GPU algorithm is anywhere from 4-10x slower than the sequential algorithm currently as seen below in the two Figures below.
 
 ![Figure 1](images/plot100.jpg)
-![Figure 2](images/plot500.jpg)
 
 These plots show the performance of the two algorithms over a wide range of well-conditioned, tall and skinny matrices. 
 These types of matrices are common when solving these problems and I belived they would be a good place to start evaluating the performance of this algorithm.
 The first thing to observe is that the performance of the GPU algorithm is linearly increasing with problem size. 
 Since my current implementation was only able to use 1 thread block, this result is not too surprising as we are not able to leverage the full power of the GPU to increase performance.
 As such, we see a linear speedup since the one thread block is being close to fully utilized and when we increase the problem size we increase the amount of work that needs to be completed linearly. 
+
+![Figure 2](images/plot500.jpg)
 
 The sequential algorithm also observes a fairly similiar behavior where the problem increases linearly in execution time as the problem size increases. 
 However, what we observe is that the increase in the sequential execution time is significantly lower than the GPU's execution time increase.
