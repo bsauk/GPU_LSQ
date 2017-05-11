@@ -46,75 +46,113 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
   int perRow = dmin(COLUMNS, cols); // Currently should not work accurately if COLUMNS < cols
   double w = 0.0, xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00, tempR = 0.00, RHSi = 0.0, xy = 0.00, yi = 0.00;
   if(idx >= blockDim.x || jdx >= blockDim.y ) return;
+  if(threadIdx.x == 0) {
+    //    for(int i=threadIdx.y; i<perRow; i+=blockDim.y) { 
+      //      sD[i] = 0.f;
+    //      sRHS[i] = 0.f;
+    //    }
+  }
   
   for(int i=threadIdx.x; i<rows; i+=blockDim.x) { // i<rows
     for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
-      dXblock[j] = dA[i*cols+j];
+      dXblock[threadIdx.x*perRow+j] = dA[i*cols+j];
     }
+    int rowsLeft = dmin(NB, rows-i+threadIdx.x);
     int nextr = 0;
+    bool smallW = false;
     w = dWeights[i];
     yi = dY[i];
     
     for(int j=0; j<cols; j++) { // j < cols
       __syncthreads();
-      di = dD[j];
-      RHSi = dRHS[j];
       if(fabs(w) < vsmall) {
 	dWeights[i] = w;
 	dY[i] = yi;
-	break;
-      } 
-      xi = dXblock[j]; 
-      if(fabs(xi) >= vsmall) {
-	cbar = di/(di+w*xi*xi);
-	sbar = w*xi/(di+w*xi*xi);
-	di = di+w*xi*xi;
-	for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
-	  if(colBlock > j) {
-	    tempR = dR[nextr+colBlock-j-1];
-	    xk = dXblock[colBlock];
-	    dXblock[colBlock] = xk-xi*tempR;
-	    dR[nextr+colBlock-j-1] = cbar*tempR+sbar*xk;
-	    tempR = cbar*tempR+sbar*xk;
+	smallW = true;
+      } else {	
+	//	di = sD[j];
+	//	RHSi = sRHS[j];
+	di = dD[j];
+	RHSi = dRHS[j];
+      }
+      //      for(int k=i-threadIdx.x; k<i+1; k++) {
+      for(int k=0; k<threadIdx.x+1; k++) {
+	xi = dXblock[k*perRow+j]; 
+	w = dWeights[k+i-threadIdx.x];
+	if(fabs(xi) >= vsmall && !smallW && fabs(w) >= vsmall) {
+	  yi = dY[k+i-threadIdx.x];
+	  cbar = di/(di+w*xi*xi);
+	  sbar = w*xi/(di+w*xi*xi);
+	  di = di+w*xi*xi;
+	  for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
+	    if(colBlock > j) {
+	      tempR = dR[nextr+colBlock-j-1];
+	      xk = dXblock[k*perRow+colBlock];
+	      if(k == threadIdx.x) {
+		dXblock[k*perRow+colBlock] = xk-xi*tempR;
+		dR[nextr+colBlock-j-1] = cbar*tempR+sbar*xk;
+	      }
+	      tempR = cbar*tempR+sbar*xk;
+	    }
 	  }
+	  w = cbar*w;
+	  xy = yi;
+	  yi = xy-xi*RHSi;
+	  RHSi = cbar*RHSi+sbar*xy;
 	}
-	w = cbar*w;
-	xy = yi;
-	yi = xy-xi*RHSi;
-	RHSi = cbar*RHSi+sbar*xy;
-	for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
-	  if(colBlock == j) {
-	    dD[colBlock] = di;
-	    dRHS[colBlock] = RHSi;
+	__syncthreads();
+      }
+      nextr = nextr+cols-j-1;
+      for(int rowBlock=0; rowBlock<NB; rowBlock++) {
+	if(!smallW) {
+	  for(int l=jdx; l<perRow; l+=blockDim.y) {
+	    if(l == j && rowBlock == threadIdx.x) {
+	      //	      sD[l] = di;
+	      dD[l] = di;
+	      //sRHS[l] = RHSi;
+	      dRHS[l] = RHSi;
+	    }
 	  }
 	}
       }
-      nextr = nextr+cols-j-1;
+      for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
+	if(colBlock == perRow-1 && fabs(xi) >= vsmall) {
+	  dWeights[i] = w;
+	  dY[i] = yi;
+	}
+      }	
     }
-    if(jdx==0) {
-      dWeights[i] = w;
-      dY[i] = yi;
+    for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
+      dA[i*cols+colBlock] = dXblock[threadIdx.x*perRow+colBlock];
     }
+    // This will move the values stored in the shared state to the global variables, that I will need later!
+    
+    //    for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
+    //      dD[j] = sD[j];
+    //      dRHS[j] = sRHS[j];
+    //    }
   }
-  /*  
-  // Used to test accuracy of the parallel code
-  if(idx==0 && jdx == 0) {
-    for(int i=0; i<r_dim; i++) {
-      printf("dR[%d]=%f\n", i, dR[i]);
-    }
-    for(int i=0; i<cols; i++) {
-      printf("D[%d]=%f rhs[%d]=%f\n", i, dD[i], i, dRHS[i]);
-    }
-  }
-  */     
+  __syncthreads();
+  
+  /* // Used to test accuracy of the parallel code
+     if(idx==0 && jdx == 0) {
+     for(int i=0; i<r_dim; i++) {
+     printf("dR[%d]=%f\n", i, dR[i]);
+     }
+     for(int i=0; i<cols; i++) {
+     printf("D[%d]=%f rhs[%d]=%f\n", i, dD[i], i, dRHS[i]);
+     }
+     }
+  */
   
   if(jdx==0 && idx==0) { // Have to sequentially add the dSSERR values because atomic_dadd doesn't seem to work in CUDA.
     for(int i=0; i<rows; i++) {
       dSSERR[0] = dSSERR[0]+dWeights[i]*dY[i]*dY[i];
+      //      printf("dSSERR[%d]=%f dWeights[%d]=%f dY[%d]=%f\n", i, dSSERR[0], i, dWeights[i], i, dY[i]);
     }
   }
 } 
-
+  
 void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound, int check) {
 
   int nvar = cols-1, r_dim = cols*(cols-1)/2;
@@ -174,7 +212,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   includGPU<<<blocks, threadsPerBlock, shared_size>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights, r_dim);
   cudaDeviceSynchronize();
   double endInclud = CycleTimer::currentSeconds();
-  printf("%f\n", 1000.f*(endInclud-startInclud));
+  printf("GPUInclud = %f ms\n", 1000.f*(endInclud-startInclud));
   // Transfer results back to CPU from GPU!
   cudaMemcpy(D, dD, cols*sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(r, dR, r_dim*sizeof(double), cudaMemcpyDeviceToHost);
@@ -246,13 +284,5 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
       }
     }
   }
-
-  cudaFree(dA);
-  cudaFree(dY);
-  cudaFree(dD);
-  cudaFree(dR);
-  cudaFree(dRHS);
-  cudaFree(dSSERR);
-  cudaFree(dWeights);
 }
 

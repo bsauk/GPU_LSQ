@@ -1,0 +1,20 @@
+#!/bin/bash
+
+M=500
+N=100
+NLIM=500
+LIMIT=12000
+make clean
+g++ makeMatrix.cpp 
+make
+rm results.txt
+while [[ $M -le $LIMIT ]]; do
+    while [[ $N -le $NLIM ]]; do
+	echo "Execution Times for $M x $N" >> results2.txt
+	./a.out $M $N 0 > problem.dat
+	./gpusub problem.dat $M $N 10 10 0 >> results2.txt
+	((N+=100))
+    done
+    N=100
+    ((M+=500))
+done

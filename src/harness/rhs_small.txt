@@ -1,0 +1,23 @@
+rhs[0] = 541
+Hello
+rhs[0] = 532.5
+rhs[1] = 0.06589147286821706
+Hello
+rhs[0] = 542
+rhs[1] = -0.03802628150243829
+rhs[3] = -1.05383465071566
+Hello
+rhs[0] = 510
+rhs[1] = -0.02553809515253527
+rhs[2] = -42.25751653451463
+Hello
+QR-factorization is not singular
+Best subsets found of 1 variables
+     R.S.S.          Variable numbers
+446.5190631795176    0   3   
+478.2866561499504    0   1   
+Best subsets found of 2 variables
+     R.S.S.          Variable numbers
+310.4435387401834    0   1   3   
+383.5307525898309    0   2   3   
+Overall Time: 0.4163291305303574 ms

@@ -1,0 +1,5 @@
+Execution Times for 4000 x 4000
+Execution Times for 9000 x 4000
+Execution Times for 14000 x 4000
+Execution Times for 19000 x 4000
+Execution Times for 24000 x 4000

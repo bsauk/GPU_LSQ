@@ -6,6 +6,7 @@
 
 CC            = gcc
 LD            = gcc
+#CFLAGS        = -g -Wall
 CFLAGS        = -O3 -Wall
 LDFLAGS       = 
 #NVCCFLAGS     = -O0 -g -G -m64 --gpu-architecture compute_35
