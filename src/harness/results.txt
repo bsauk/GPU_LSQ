@@ -1,0 +1,300 @@
+Execution Times for 1000 x 100
+GoldInclud = 25.17798030748963 ms
+GPUInclud = 278.040703 ms
+Execution Times for 1000 x 200
+GoldInclud = 103.1984887085855 ms
+GPUInclud = 534.337358 ms
+Execution Times for 1000 x 300
+GoldInclud = 199.4096357375383 ms
+GPUInclud = 866.789039 ms
+Execution Times for 1000 x 400
+GoldInclud = 404.5283631421626 ms
+GPUInclud = 1145.753434 ms
+Execution Times for 1000 x 500
+GoldInclud = 673.4141684137285 ms
+GPUInclud = 1399.662204 ms
+Execution Times for 2000 x 100
+GoldInclud = 64.31956496089697 ms
+GPUInclud = 562.715187 ms
+Execution Times for 2000 x 200
+GoldInclud = 187.4310108833015 ms
+GPUInclud = 1101.351303 ms
+Execution Times for 2000 x 300
+GoldInclud = 406.7820087075233 ms
+GPUInclud = 1826.925586 ms
+Execution Times for 2000 x 400
+GoldInclud = 774.3648667819798 ms
+GPUInclud = 2467.710058 ms
+Execution Times for 2000 x 500
+GoldInclud = 1144.710576627403 ms
+GPUInclud = 3086.769355 ms
+Execution Times for 3000 x 100
+GoldInclud = 96.596859395504 ms
+GPUInclud = 849.826161 ms
+Execution Times for 3000 x 200
+GoldInclud = 320.6730321981013 ms
+GPUInclud = 1673.499944 ms
+Execution Times for 3000 x 300
+GoldInclud = 625.9567383676767 ms
+GPUInclud = 2793.273870 ms
+Execution Times for 3000 x 400
+GoldInclud = 1139.840233605355 ms
+GPUInclud = 3791.832673 ms
+Execution Times for 3000 x 500
+GoldInclud = 1684.574119281024 ms
+GPUInclud = 4781.069343 ms
+Execution Times for 4000 x 100
+GoldInclud = 106.5802248194814 ms
+GPUInclud = 1136.753808 ms
+Execution Times for 4000 x 200
+GoldInclud = 382.9494500532746 ms
+GPUInclud = 2242.138685 ms
+Execution Times for 4000 x 300
+GoldInclud = 831.7620512098074 ms
+GPUInclud = 3759.020945 ms
+Execution Times for 4000 x 400
+GoldInclud = 1502.929954323918 ms
+GPUInclud = 5122.086615 ms
+Execution Times for 4000 x 500
+GoldInclud = 2270.796469878405 ms
+GPUInclud = 6475.922579 ms
+Execution Times for 5000 x 100
+GoldInclud = 162.2904045507312 ms
+GPUInclud = 1422.299411 ms
+Execution Times for 5000 x 200
+GoldInclud = 503.5515073686838 ms
+GPUInclud = 2816.105575 ms
+Execution Times for 5000 x 300
+GoldInclud = 1051.952661015093 ms
+GPUInclud = 4725.258938 ms
+Execution Times for 5000 x 400
+GoldInclud = 1859.072712250054 ms
+GPUInclud = 6453.123833 ms
+Execution Times for 5000 x 500
+GoldInclud = 2827.814495190978 ms
+GPUInclud = 8167.325884 ms
+Execution Times for 6000 x 100
+GoldInclud = 154.8352199606597 ms
+GPUInclud = 1710.165262 ms
+Execution Times for 6000 x 200
+GoldInclud = 573.7827755510807 ms
+GPUInclud = 3389.067523 ms
+Execution Times for 6000 x 300
+GoldInclud = 1261.286733206362 ms
+GPUInclud = 5684.778356 ms
+Execution Times for 6000 x 400
+GoldInclud = 2256.908053066581 ms
+GPUInclud = 7779.823677 ms
+Execution Times for 6000 x 500
+GoldInclud = 3878.614647313952 ms
+GPUInclud = 9863.898993 ms
+Execution Times for 7000 x 100
+GoldInclud = 181.4233609475195 ms
+GPUInclud = 1997.040556 ms
+Execution Times for 7000 x 200
+GoldInclud = 671.1362949572504 ms
+GPUInclud = 3958.927127 ms
+Execution Times for 7000 x 300
+GoldInclud = 1475.304908584803 ms
+GPUInclud = 6656.661183 ms
+Execution Times for 7000 x 400
+GoldInclud = 2588.412195444107 ms
+GPUInclud = 9107.588623 ms
+Execution Times for 7000 x 500
+GoldInclud = 3990.558460354805 ms
+GPUInclud = 11557.778752 ms
+Execution Times for 8000 x 100
+GoldInclud = 204.1862304322422 ms
+GPUInclud = 2282.515383 ms
+Execution Times for 8000 x 200
+GoldInclud = 766.3857396692038 ms
+GPUInclud = 4536.660798 ms
+Execution Times for 8000 x 300
+GoldInclud = 1687.749068718404 ms
+GPUInclud = 7620.055817 ms
+Execution Times for 8000 x 400
+GoldInclud = 2968.66271737963 ms
+GPUInclud = 10437.292441 ms
+Execution Times for 8000 x 500
+GoldInclud = 4643.0723965168 ms
+GPUInclud = 13254.788560 ms
+Execution Times for 9000 x 100
+GoldInclud = 230.0514616072178 ms
+GPUInclud = 2569.793367 ms
+Execution Times for 9000 x 200
+GoldInclud = 865.7675972208381 ms
+GPUInclud = 5102.426381 ms
+Execution Times for 9000 x 300
+GoldInclud = 1926.41558079049 ms
+GPUInclud = 8588.999351 ms
+Execution Times for 9000 x 400
+GoldInclud = 3413.927834481001 ms
+GPUInclud = 11763.456301 ms
+Execution Times for 9000 x 500
+GoldInclud = 5275.931660551578 ms
+GPUInclud = 14954.121863 ms
+Execution Times for 10000 x 100
+GoldInclud = 256.900423206389 ms
+GPUInclud = 2855.126853 ms
+Execution Times for 10000 x 200
+GoldInclud = 1044.202808756381 ms
+GPUInclud = 5672.483399 ms
+Execution Times for 10000 x 300
+GoldInclud = 2143.744762055576 ms
+GPUInclud = 9557.769876 ms
+Execution Times for 10000 x 400
+GoldInclud = 3767.089543864131 ms
+GPUInclud = 13107.441456 ms
+Execution Times for 10000 x 500
+GoldInclud = 5761.842432431877 ms
+GPUInclud = 16648.408968 ms
+Execution Times for 11000 x 100
+GoldInclud = 284.4141339883208 ms
+GPUInclud = 3144.255301 ms
+Execution Times for 11000 x 200
+GoldInclud = 1064.270558767021 ms
+GPUInclud = 6247.663253 ms
+Execution Times for 11000 x 300
+GoldInclud = 2363.594421185553 ms
+GPUInclud = 10518.185790 ms
+Execution Times for 11000 x 400
+GoldInclud = 4149.243937805295 ms
+GPUInclud = 14422.840487 ms
+Execution Times for 11000 x 500
+GoldInclud = 6466.82138973847 ms
+GPUInclud = 18339.611945 ms
+Execution Times for 12000 x 100
+GoldInclud = 310.2230783551931 ms
+GPUInclud = 3428.631760 ms
+Execution Times for 12000 x 200
+GoldInclud = 1161.223820410669 ms
+GPUInclud = 6822.539257 ms
+Execution Times for 12000 x 300
+GoldInclud = 2599.723011720926 ms
+GPUInclud = 11480.722772 ms
+Execution Times for 12000 x 400
+GoldInclud = 4528.129770420492 ms
+GPUInclud = 15754.458252 ms
+Execution Times for 12000 x 500
+GoldInclud = 7070.310926064849 ms
+GPUInclud = 20012.708493 ms
+Execution Times for 13000 x 100
+GoldInclud = 428.3763500861824 ms
+GPUInclud = 3718.601585 ms
+Execution Times for 13000 x 200
+GoldInclud = 1253.608393948525 ms
+GPUInclud = 7390.822738 ms
+Execution Times for 13000 x 300
+GoldInclud = 2821.124673355371 ms
+GPUInclud = 12434.222815 ms
+Execution Times for 13000 x 400
+GoldInclud = 4916.092662140727 ms
+GPUInclud = 17077.353082 ms
+Execution Times for 13000 x 500
+GoldInclud = 7660.601698793471 ms
+GPUInclud = 21723.637773 ms
+Execution Times for 14000 x 100
+GoldInclud = 363.4106633253396 ms
+GPUInclud = 4002.841615 ms
+Execution Times for 14000 x 200
+GoldInclud = 1368.325298186392 ms
+GPUInclud = 7959.336125 ms
+Execution Times for 14000 x 300
+GoldInclud = 2970.787242520601 ms
+GPUInclud = 13408.801810 ms
+Execution Times for 14000 x 400
+GoldInclud = 5347.596995998174 ms
+GPUInclud = 18417.578655 ms
+Execution Times for 14000 x 500
+GoldInclud = 8205.384128261358 ms
+GPUInclud = 23436.098132 ms
+Execution Times for 15000 x 100
+GoldInclud = 387.3195927590132 ms
+GPUInclud = 4290.410130 ms
+Execution Times for 15000 x 200
+GoldInclud = 1455.229112412781 ms
+GPUInclud = 8529.458498 ms
+Execution Times for 15000 x 300
+GoldInclud = 3180.919626262039 ms
+GPUInclud = 14387.751522 ms
+Execution Times for 15000 x 400
+GoldInclud = 5708.894378505647 ms
+GPUInclud = 19739.713459 ms
+Execution Times for 15000 x 500
+GoldInclud = 8794.05929101631 ms
+GPUInclud = 25120.990903 ms
+Execution Times for 16000 x 100
+GoldInclud = 411.0006201080978 ms
+GPUInclud = 4576.680781 ms
+Execution Times for 16000 x 200
+GoldInclud = 1539.102901238948 ms
+GPUInclud = 9095.770675 ms
+Execution Times for 16000 x 300
+GoldInclud = 3444.063261616975 ms
+GPUInclud = 15332.673564 ms
+Execution Times for 16000 x 400
+GoldInclud = 5963.227636646479 ms
+GPUInclud = 21065.588449 ms
+Execution Times for 16000 x 500
+GoldInclud = 9258.577150292695 ms
+GPUInclud = 26827.398449 ms
+Execution Times for 17000 x 100
+GoldInclud = 449.4128348305821 ms
+GPUInclud = 4856.154215 ms
+Execution Times for 17000 x 200
+GoldInclud = 1648.844745475799 ms
+GPUInclud = 9675.583325 ms
+Execution Times for 17000 x 300
+GoldInclud = 3605.409367009997 ms
+GPUInclud = 16298.904784 ms
+Execution Times for 17000 x 400
+GoldInclud = 6466.328186448663 ms
+GPUInclud = 22402.105914 ms
+Execution Times for 17000 x 500
+GoldInclud = 9978.536269627512 ms
+GPUInclud = 28508.294670 ms
+Execution Times for 18000 x 100
+GoldInclud = 465.3171636164188 ms
+GPUInclud = 5148.468880 ms
+Execution Times for 18000 x 200
+GoldInclud = 1740.60007603839 ms
+GPUInclud = 10234.482870 ms
+Execution Times for 18000 x 300
+GoldInclud = 3822.528090327978 ms
+GPUInclud = 17274.093288 ms
+Execution Times for 18000 x 400
+GoldInclud = 6723.517045844346 ms
+GPUInclud = 23733.466296 ms
+Execution Times for 18000 x 500
+GoldInclud = 10587.12434815243 ms
+GPUInclud = 30168.073328 ms
+Execution Times for 19000 x 100
+GoldInclud = 489.3281799741089 ms
+GPUInclud = 5434.678995 ms
+Execution Times for 19000 x 200
+GoldInclud = 1843.521500471979 ms
+GPUInclud = 10816.421606 ms
+Execution Times for 19000 x 300
+GoldInclud = 4206.329355482012 ms
+GPUInclud = 18248.065656 ms
+Execution Times for 19000 x 400
+GoldInclud = 7233.807847835124 ms
+GPUInclud = 25032.809253 ms
+Execution Times for 19000 x 500
+GoldInclud = 12365.94645772129 ms
+GPUInclud = 31906.881255 ms
+Execution Times for 20000 x 100
+GoldInclud = 521.5579918585718 ms
+GPUInclud = 5715.495777 ms
+Execution Times for 20000 x 200
+GoldInclud = 1953.801974188536 ms
+GPUInclud = 11379.340033 ms
+Execution Times for 20000 x 300
+GoldInclud = 4253.922920674086 ms
+GPUInclud = 19193.845595 ms
+Execution Times for 20000 x 400
+GoldInclud = 7473.844512365758 ms
+GPUInclud = 26377.553686 ms
+Execution Times for 20000 x 500
+GoldInclud = 11768.130665645 ms
+GPUInclud = 33574.054077 ms

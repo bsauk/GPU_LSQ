@@ -9,7 +9,7 @@ The LSQ best subset regression algorithm can be used to identify accuracte linea
 The performance of this algorithm is dominated by the cost of performing one inherently sequential kernel repeatedly. 
 It is possible to parallelize this algorithm to be suitable for GPU computing by eliminating dependencies by repeating certain calculations. 
 
-# Techincal Challenge
+# Techincal Challenges
 
 The original version of this algorithm was not designed to be run on a parallel computing platform. 
 The LSQ algorithm iteratively reads in a row of data at a time, and updates a previously computed QR factorization result. 
@@ -22,8 +22,26 @@ As such, I have not been able to compare my results against other high performan
 
 # Preliminary Results
 
-I am still in the process of generating speedup plots. Currently, my initial implementation is accurate but about 4x slower than the sequential CPU code for fairly large problems. 
-I am hoping to fix a few more bugs, and then improve my performance a bit more before the final deadline on Friday.
+All of my experiments were carried out on an NVIDIA Tesla K40 GPU. 
+Having spent a while to ensure accuracy, the project will need some fine refining to improve performance.
+Currently, the parallel GPU algorithm is anywhere from 4-10x slower than the sequential algorithm currently as seen below in the two Figures below.
+
+![Figure 1](images/plot100.jpg)
+![Figure 2](images/plot500.jpg)
+
+These plots show the performance of the two algorithms over a wide range of well-conditioned, tall and skinny matrices. 
+These types of matrices are common when solving these problems and I belived they would be a good place to start evaluating the performance of this algorithm.
+The first thing to observe is that the performance of the GPU algorithm is linearly increasing with problem size. 
+Since my current implementation was only able to use 1 thread block, this result is not too surprising as we are not able to leverage the full power of the GPU to increase performance.
+As such, we see a linear speedup since the one thread block is being close to fully utilized and when we increase the problem size we increase the amount of work that needs to be completed linearly. 
+
+The sequential algorithm also observes a fairly similiar behavior where the problem increases linearly in execution time as the problem size increases. 
+However, what we observe is that the increase in the sequential execution time is significantly lower than the GPU's execution time increase.
+To compare these two, I also included a relative speedup in terms of execution time of the serial version divided by the execution time of the parallel GPU version, where we see that all of those values are less than 1. 
+
+In the time remaining before this project is due, and for my future work, I want to try and increase the amount of parallelism in the GPU algorithm.
+Currently, I have to perform some repeated calculations to eliminate dependencies, as well as only use one thread block to ensure that values are updated before being used by another thread. 
+These sequential dependencies are leading to poor performance, as well as the large amount of thread divergence that currently exists in my code. 
 
 # Summary 
 

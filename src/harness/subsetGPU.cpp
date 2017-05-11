@@ -34,9 +34,9 @@ Inputs for this function are:
 
 void compare_results(int first, int max_size, int nbest, int lopt_dim1, double** ressGold, double** ressGPU, int** loptGold, int** loptGPU);
 
-void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound);
+void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound, int check);
 
-void subset_gold(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound) {
+void subset_gold(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound, int check) {
 
   int nvar = cols-1, nobs = 0, r_dim = cols*(cols-1)/2, max_cdim = max_size*(max_size+1)/2;
   double sserr[1], D[cols], r[r_dim], rss[cols], rhs[cols], xrow[cols+1], work[cols], tol[cols];
@@ -60,18 +60,18 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
   }
   row_ptr[cols-1] = 0;
 
-  
+  double startInclud = CycleTimer::currentSeconds();
   for(int i=0; i<rows; i++) {
     xrow[0] = 1.0;
     for(int j=1; j<cols; j++) {
       xrow[j] = A[i*cols+j-1];
     }
-    double startInclud = CycleTimer::currentSeconds();
     includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
-    double endInclud = CycleTimer::currentSeconds();
     //    std::cout << "SSERR = " << *sserr << std::endl;
     //    std::cout << "Includ for " << i << " = " << 1000.f*(endInclud-startInclud) << " ms" << std::endl;
   }
+  double endInclud = CycleTimer::currentSeconds();
+  std::cout<<"GoldInclud = " << 1000.f*(endInclud-startInclud) << " ms" << std::endl;
   //  std::cout << "sserr = " << sserr[0] << std::endl;
   /*
   for(int i=0; i<cols; i++) {
@@ -85,13 +85,14 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
   nobs = rows;
 
   sing(lindep, ifault, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
-
-  if(ifault[0] == 0) {
-    std::cout << "QR-factorization is not singular" << std::endl;
-  } else {
-    for(int i=0; i<nvar; i++) {
-      if(lindep[i]) 
-	std::cout << vorder[i] << " is exactly linearly related to earlier variables" << std::endl;
+  if(check) {
+    if(ifault[0] == 0) {
+      std::cout << "QR-factorization is not singular" << std::endl;
+    } else {
+      for(int i=0; i<nvar; i++) {
+	if(lindep[i]) 
+	  std::cout << vorder[i] << " is exactly linearly related to earlier variables" << std::endl;
+      }
     }
   }
   
@@ -101,17 +102,19 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
   tolset(cols, work, r, tol, tol_set);
 
   sing(lindep, ier, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
-  if(ier[0] != 0) {
-    std::cout << ier[0] << " singularities detected in predictor variables" << std::endl;
-    std::cout << "These variables are linearly related to earlier ones:" << std::endl;
-    for(int i=0; i<cols; i++) {
-      if(lindep[i]) {
-	for(int j=0; j<nvar; j++) {
+  if(check) {
+    if(ier[0] != 0) {
+      std::cout << ier[0] << " singularities detected in predictor variables" << std::endl;
+      std::cout << "These variables are linearly related to earlier ones:" << std::endl;
+      for(int i=0; i<cols; i++) {
+	if(lindep[i]) {
+	  for(int j=0; j<nvar; j++) {
 	  if(lindep[j]) {
 	    std::cout << vorder[j] << std::endl;
 	  }
-	}
+	  }
 	break;
+	}
       }
     }
   }
@@ -129,17 +132,18 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
   // The next part is that I will need to implement the different subset selection techniques, pick a few
   // Forward selection
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
-
-  for(int i=first; i<max_size; i++) {
-    std::cout << "Best subsets found of " << i << " variables" << std::endl;
-    std::cout << "     R.S.S.          Variable numbers" << std::endl;
-    int pos = (i*i+i)/2;
-    for(int j=0; j<nbest; j++) {
-      std::cout << ress[i][j] << "    ";
-      for(int k=pos; k<pos+i+1; k++) {
-	std::cout << lopt[j][k] << "   ";
+  if(check) {
+    for(int i=first; i<max_size; i++) {
+      std::cout << "Best subsets found of " << i << " variables" << std::endl;
+      std::cout << "     R.S.S.          Variable numbers" << std::endl;
+      int pos = (i*i+i)/2;
+      for(int j=0; j<nbest; j++) {
+	std::cout << ress[i][j] << "    ";
+	for(int k=pos; k<pos+i+1; k++) {
+	  std::cout << lopt[j][k] << "   ";
+	}
+	std::cout << std::endl;
       }
-      std::cout << std::endl;
     }
   }  
 }
@@ -170,17 +174,15 @@ int main(int argc, char* argv[]) {
   if(argc > 8) {
     std:: cout << "Too many arguments please only provide file name, rows, cols, nbest, and max. subset size" << std::endl;
   }
-  int check = 0;
-
-  //  if(argc == 7) {
-  //    check = atoi(argv[6]);
-  //  }
+  
 
   // This part reads in the input file using the # of rows and columns
   const int rows = atoi(argv[2]);
   const int cols = atoi(argv[3])+1;
   const int nbest = atoi(argv[4]);
   const int nvar_max = atoi(argv[5]);
+  const int  check = atoi(argv[6]);
+  
   // If fit_constant true, which i'm assuming for now add 1 to cols
   double AGPU[rows*(cols+1)]; // Input matrix Changed to cols+1 for adding a column of 1s
   double Amagma[rows*cols];
@@ -266,20 +268,20 @@ int main(int argc, char* argv[]) {
   // CPU sequential subset methodology copied from Fortran implementation
   double startGold = CycleTimer::currentSeconds();
   for(int i=0; i<1; i++) {
-    subset_gold(Agold, weights, yGold, rows, cols, nbest, max_size, ressGold, loptGold, boundGold);
+    subset_gold(Agold, weights, yGold, rows, cols, nbest, max_size, ressGold, loptGold, boundGold, check);
   }
   double endGold = CycleTimer::currentSeconds();
 
   double startGPU = CycleTimer::currentSeconds();
   for(int i=0; i<1; i++) {
-    gpu_lsq(AGPU, weights, yGPU, rows, cols, nbest, max_size, ressGPU, loptGPU, boundGPU);
+    gpu_lsq(AGPU, weights, yGPU, rows, cols, nbest, max_size, ressGPU, loptGPU, boundGPU, check);
   }
   double endGPU = CycleTimer::currentSeconds();
   // if(check) compare_results(1, max_size, nbest, lopt_dim1, ressGold, ressGPU, loptGold, loptGPU);
-  
-  std::cout << "Gold Time: " << 1000.f*(endGold-startGold) << " ms" << std::endl;
-  std::cout << "GPU Time: " << 1000.f*(endGPU-startGPU) << " ms" << std::endl;
-  
+  if(check) {  
+    std::cout << "Gold Time: " << 1000.f*(endGold-startGold) << " ms" << std::endl;
+    std::cout << "GPU Time: " << 1000.f*(endGPU-startGPU) << " ms" << std::endl;
+  }
   /****************************************************************************************************************************************
   // The following parts below are for the MAGMA and cuSolverDN comparisons. Currently commented out while I work on parallelizing my code.
 

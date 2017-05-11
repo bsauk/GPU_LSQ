@@ -13,14 +13,13 @@
 #include "lsq.h"
 #include "sub.h"
 
-#define NB 16
-#define COLUMNS 256
+#define NB 2
+#define COLUMNS 512
 
-/*
 static inline int updiv(int n, int d) {
   return (n+d-1)/d;
 }
-*/
+
 
 __device__ __inline__ int dmin(int a, int b) {
   if(a>b) {
@@ -38,8 +37,8 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 
   //__shared__ double dXblock[(NB)*COLUMNS];
   extern __shared__ double dXblock[];
-  __shared__ double sD[COLUMNS];
-  __shared__ double sRHS[COLUMNS];
+  //  __shared__ double sD[COLUMNS];
+  //  __shared__ double sRHS[COLUMNS];
 
   const int idx = blockIdx.x*blockDim.x+threadIdx.x; // Maps to rows
   const int jdx = blockIdx.y*blockDim.y+threadIdx.y; // Maps to columns
@@ -48,10 +47,10 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
   double w = 0.0, xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00, tempR = 0.00, RHSi = 0.0, xy = 0.00, yi = 0.00;
   if(idx >= blockDim.x || jdx >= blockDim.y ) return;
   if(threadIdx.x == 0) {
-    for(int i=threadIdx.y; i<perRow; i+=blockDim.y) { 
-      sD[i] = 0.f;
-      sRHS[i] = 0.f;
-    }
+    //    for(int i=threadIdx.y; i<perRow; i+=blockDim.y) { 
+      //      sD[i] = 0.f;
+    //      sRHS[i] = 0.f;
+    //    }
   }
   
   for(int i=threadIdx.x; i<rows; i+=blockDim.x) { // i<rows
@@ -71,10 +70,10 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	dY[i] = yi;
 	smallW = true;
       } else {	
-	di = sD[j];
-	RHSi = sRHS[j];
-	//	di = dD[j];
-	//	RHSi = dRHS[j];
+	//	di = sD[j];
+	//	RHSi = sRHS[j];
+	di = dD[j];
+	RHSi = dRHS[j];
       }
       //      for(int k=i-threadIdx.x; k<i+1; k++) {
       for(int k=0; k<threadIdx.x+1; k++) {
@@ -108,10 +107,10 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	if(!smallW) {
 	  for(int l=jdx; l<perRow; l+=blockDim.y) {
 	    if(l == j && rowBlock == threadIdx.x) {
-	      sD[l] = di;
-	      //	      dD[l] = di;
-	      sRHS[l] = RHSi;
-	      //dRHS[l] = RHSi;
+	      //	      sD[l] = di;
+	      dD[l] = di;
+	      //sRHS[l] = RHSi;
+	      dRHS[l] = RHSi;
 	    }
 	  }
 	}
@@ -128,25 +127,24 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
     }
     // This will move the values stored in the shared state to the global variables, that I will need later!
     
-    for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
-      dD[j] = sD[j];
-      dRHS[j] = sRHS[j];
-    }
-    
+    //    for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
+    //      dD[j] = sD[j];
+    //      dRHS[j] = sRHS[j];
+    //    }
   }
   __syncthreads();
-
+  
   /* // Used to test accuracy of the parallel code
-  if(idx==0 && jdx == 0) {
-    for(int i=0; i<r_dim; i++) {
-      printf("dR[%d]=%f\n", i, dR[i]);
-    }
-    for(int i=0; i<cols; i++) {
-      printf("D[%d]=%f rhs[%d]=%f\n", i, dD[i], i, dRHS[i]);
-    }
-  }
+     if(idx==0 && jdx == 0) {
+     for(int i=0; i<r_dim; i++) {
+     printf("dR[%d]=%f\n", i, dR[i]);
+     }
+     for(int i=0; i<cols; i++) {
+     printf("D[%d]=%f rhs[%d]=%f\n", i, dD[i], i, dRHS[i]);
+     }
+     }
   */
-
+  
   if(jdx==0 && idx==0) { // Have to sequentially add the dSSERR values because atomic_dadd doesn't seem to work in CUDA.
     for(int i=0; i<rows; i++) {
       dSSERR[0] = dSSERR[0]+dWeights[i]*dY[i]*dY[i];
@@ -154,8 +152,8 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
     }
   }
 } 
-
-void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound) {
+  
+void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbest, int max_size, double** ress, int** lopt, double* bound, int check) {
 
   int nvar = cols-1, r_dim = cols*(cols-1)/2;
   double sserr[1], rss[cols], rhs[cols], work[cols], tol[cols], D[cols], r[r_dim];
@@ -177,6 +175,8 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   }
   row_ptr[cols-1] = 0;
 
+  double startCopy = CycleTimer::currentSeconds();
+
   double* dA = NULL;
   double* dY = NULL;
   double* dD = NULL; // cols
@@ -192,6 +192,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   cudaMalloc((void **)&dRHS, cols*sizeof(double));
   cudaMalloc((void **)&dSSERR, sizeof(double));
   cudaMalloc((void **)&dWeights, rows*sizeof(double));
+  double endCopy = CycleTimer::currentSeconds();
 
   cudaMemcpy(dA, A, rows*(cols+1)*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(dY, y, rows*sizeof(double), cudaMemcpyHostToDevice);
@@ -202,73 +203,54 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   cudaMemset(dRHS, 0.00, cols*sizeof(double));
   cudaMemset(dSSERR, 0.00, sizeof(double));
 
-  dim3 threadsPerBlock(NB,NB);
+  dim3 threadsPerBlock(NB,updiv(512,NB));
   dim3 blocks(1, 1);
-  int shared_size = (cols+1)*NB;
+  int shared_size = (cols+1)*NB*sizeof(double);
   cudaDeviceSynchronize();
+  //  printf("copyTime= %f ms\n", 1000.f*(endCopy-startCopy)); //Used to determine how long it takes to set up the matrix. Not used for comparison
+  double startInclud = CycleTimer::currentSeconds();
   includGPU<<<blocks, threadsPerBlock, shared_size>>>(rows, cols, dA, dY, dD, dR, dRHS, dSSERR, dWeights, r_dim);
   cudaDeviceSynchronize();
-
+  double endInclud = CycleTimer::currentSeconds();
+  printf("GPUInclud = %f ms\n", 1000.f*(endInclud-startInclud));
   // Transfer results back to CPU from GPU!
   cudaMemcpy(D, dD, cols*sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(r, dR, r_dim*sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(rhs, dRHS, cols*sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(sserr, dSSERR, sizeof(double), cudaMemcpyDeviceToHost);
 
-  // Then rest of code is CPU code. Since includ was the most time consuming step (>90% of computation this should be ok)
-  /****************************************************************
-  // This part gets translated into CUDA device code.
-  for(int i=0; i<rows; i++) {
-    xrow[0] = 1.0;
-    for(int j=1; j<cols; j++) {
-      xrow[j] = A[i*cols+j-1];
-    }
-    includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
-  }
-  *****************************************************************/
-  /*  //Used to determine when values are accurate  
-  for(int i=0; i<cols; i++) {
-    printf("D[%d]=%f rhs[%d]=%f\n", i, D[i], i, rhs[i]);
-  }
-  for(int i=0; i<r_dim; i++) {
-    printf("r[%d]=%f\n", i, r[i]);
-  }
-  printf("sserr=%f\n", sserr[0]);
-  */
-  
-  //  std::cout << "sserr = " << sserr[0] << std::endl;
   sing(lindep, ifault, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
-
-  if(ifault[0] == 0) {
-    std::cout << "QR-factorization is not singular" << std::endl;
-  } else {
-    for(int i=0; i<nvar; i++) {
-      if(lindep[i]) 
-	std::cout << vorder[i] << " is exactly linearly related to earlier variables" << std::endl;
+  if(check) {
+    if(ifault[0] == 0) {
+      std::cout << "QR-factorization is not singular" << std::endl;
+    } else {
+      for(int i=0; i<nvar; i++) {
+	if(lindep[i]) 
+	  std::cout << vorder[i] << " is exactly linearly related to earlier variables" << std::endl;
+      }
     }
   }
-
   ss(cols, sserr, rss, rss_set, D, rhs);
   
   // Set tolerances and test for singularities
   tolset(cols, work, r, tol, tol_set);
   sing(lindep, ier, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
-
-  if(ier[0] != 0) {
-    std::cout << ier[0] << " singularities detected in predictor variables" << std::endl;
-    std::cout << "These variables are linearly related to earlier ones:" << std::endl;
-    for(int i=0; i<cols; i++) {
-      if(lindep[i]) {
-	for(int j=0; j<nvar; j++) {
-	  if(lindep[j]) {
-	    std::cout << vorder[j] << std::endl;
+  if(check) {
+    if(ier[0] != 0) {
+      std::cout << ier[0] << " singularities detected in predictor variables" << std::endl;
+      std::cout << "These variables are linearly related to earlier ones:" << std::endl;
+      for(int i=0; i<cols; i++) {
+	if(lindep[i]) {
+	  for(int j=0; j<nvar; j++) {
+	    if(lindep[j]) {
+	      std::cout << vorder[j] << std::endl;
+	    }
 	  }
+	  break;
 	}
-	break;
       }
     }
   }
-
   // Not sure if these three need to be called again here...
   tolset(cols, work, r, tol, tol_set);
   sing(lindep, ier, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
@@ -288,17 +270,18 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
   //  double endForwrd = CycleTimer::currentSeconds();
   //  std::cout << "Forwrd took " << 1000.f*(endForwrd-startForwrd) << std::endl;
-
-  for(int i=first; i<max_size; i++) {
-    std::cout << "Best subsets found of " << i << " variables" << std::endl;
-    std::cout << "     R.S.S.          Variable numbers" << std::endl;
-    int pos = (i*i+i)/2;
-    for(int j=0; j<nbest; j++) {
-      std::cout << ress[i][j] << "    ";
-      for(int k=pos; k<pos+i+1; k++) {
-	std::cout << lopt[j][k] << "   ";
+  if(check) {
+    for(int i=first; i<max_size; i++) {
+      std::cout << "Best subsets found of " << i << " variables" << std::endl;
+      std::cout << "     R.S.S.          Variable numbers" << std::endl;
+      int pos = (i*i+i)/2;
+      for(int j=0; j<nbest; j++) {
+	std::cout << ress[i][j] << "    ";
+	for(int k=pos; k<pos+i+1; k++) {
+	  std::cout << lopt[j][k] << "   ";
+	}
+	std::cout << std::endl;
       }
-      std::cout << std::endl;
     }
   }
 }
