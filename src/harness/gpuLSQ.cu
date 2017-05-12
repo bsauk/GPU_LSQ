@@ -175,6 +175,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   cudaMemcpy(sserr, dSSERR, sizeof(double), cudaMemcpyDeviceToHost);
 
   sing(lindep, ifault, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
+  /*
   if(check) {
     if(ifault[0] == 0) {
       std::cout << "QR-factorization is not singular" << std::endl;
@@ -185,11 +186,13 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
       }
     }
   }
+  */
   ss(cols, sserr, rss, rss_set, D, rhs);
   
   // Set tolerances and test for singularities
   tolset(cols, work, r, tol, tol_set);
   sing(lindep, ier, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
+  /*
   if(check) {
     if(ier[0] != 0) {
       std::cout << ier[0] << " singularities detected in predictor variables" << std::endl;
@@ -206,6 +209,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
       }
     }
   }
+  */
   // Not sure if these three need to be called again here...
   tolset(cols, work, r, tol, tol_set);
   sing(lindep, ier, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);

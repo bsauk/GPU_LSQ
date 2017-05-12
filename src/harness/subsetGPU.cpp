@@ -9,7 +9,7 @@
 
 #include "CycleTimer.h"
 
-/***********************************************************************************************************************************
+/**************************************************************************************************************************************
 bsauk 5/12
 
 Inputs for this function are: 
@@ -19,12 +19,15 @@ Inputs for this function are:
 4) How many best subset selection results should be stored for each number of variables.
 5) Maximum number of variables to be used in the regression.
 6) Either 0 or 1 to determine if checking should be used. 1 for comparison against gold version 0 otherwise.
-
+If 1 is selected it will report the best subsets that are selected by each of the algorithms, and there may be very small discrepencies.
 This algorithm can be used in conjuction with the makeMatrix.cpp file to produce matrices that can be tested with this algorithm.
 
 The premise of this algorithm is to read in a matrix from a .dat file, and then determine the best subset regression.
 
-**************************************************************************************************************************************/
+There may be small discrepencies between the sequential and parallel solutions for larger problems, but as the differences are very 
+small and the residual sum of squared errors are about the same, I am leaving it as acceptable for now, but something to fix in the
+future.
+******************************************************************************************************************************************/
 
 void compare_results(int first, int max_size, int nbest, int lopt_dim1, double** ressGold, double** ressGPU, int** loptGold, int** loptGPU);
 
@@ -273,7 +276,6 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "MAGMA didn't seg fault?" << std::endl;
   ****************************************************************************************************************************************/  
-
   
   return 0;
 }
