@@ -7,8 +7,8 @@ permalink: /
 
 The LSQ best subset regression algorithm can be used to identify accuracte linear models with a small number of variables. 
 The performance of this algorithm is dominated by the cost of performing one inherently sequential kernel repeatedly. 
-It is possible to parallelize this algorithm to be suitable for GPU computing by eliminating dependencies by repeating certain calculations. 
-I implemented a GPU parallel least squares algorithm based off of Alan Miller's designed for Fortran 90 [1]. 
+It is possible to parallelize this algorithm to be suitable for GPU computing by repeating certain calculations to eliminate dependencies. 
+I implemented a GPU parallel least squares algorithm based off of Alan Miller's LSQ algorithm designed for Fortran 90 [1]. 
 I compared the performance of a GPU parallel algorithm at solving best subset regression problems against a C++ copy of the original implementation. 
 Experiments were conducted on a workstation with two Intel Xeon processors E5-2660 v3 at 2.6 GHz and 128 GB of RAM, and a Nvidia Tesla K40 GPU.
 The GPU implementation was able to achieve a 25x speedup compared to the original implementation for larger sized problems. 
@@ -23,16 +23,13 @@ Best subset regression is a method used to determine the most accurate model giv
 When generating a linear model, not all measured variables may have a direct impact on the value of some dependent variable. 
 In those cases, the best subset regression problem attempts to find the best subset of variables that can be used to predict an output response [2].
 
-![Figure 1](images/residuals.jpg) 
-*Figure 1. This plot shows a one variable linear model that is fit to data.*
-
 In the LSQ algorithm that I parallelized, the part that is computationaly expensive and could benefit from parallelization was the column updates.
 This algorithm iteratively reads in a row of data and updates a QR factorization.
 The most time consuming operation is reading in a new row of data and updating the QR factorization result for each row.
-This is the most computationally intense part because for every value in every row, the algorithm performs a few operations and then has to update the remaining values in that row.
+This is the most computationally intense part because for every value in every row, the algorithm performs a few operations and then has to update the remaining values in that row, and then repeats this process for the rest of the values in that row.
 Fortunately, these updates are independent of each other in each row and can be executed in parallel.
 
-![Figure 2](images/updates.jpg) *Figure 2. There is a sequential dependency in this factorization. The calculations on A have to finish before the updates can occur on the rest of the elements, but those updates can be done in parallel. Then the next set of calculations on B have to occur after the updates finish.*
+![Figure 1](images/updates.jpg) *Figure 1. There is a sequential dependency in this factorization. The calculations on A have to finish before the updates can occur on the rest of the elements, but those updates can be done in parallel. Then the next set of calculations on B have to occur after the updates finish.*
 
 The algorithm is filled with a lot of sequential dependencies. 
 One of the most apparent is that each row has to be read in sequentially. 
@@ -127,9 +124,9 @@ Across the experiments, the number of rows in each of the experiments was held a
 Initially, I examined how the two algorithms compared as I increased the number of rows, while holding the number of columns constant. 
 As seen in the Figures below, what was observed was that as the number of rows increased, the execution time linearly increased as well.
 
-![Figure 3](images/plot100.jpg) *Figure 3. There is a linear increase in execution time for both the sequential and parallel algorithms as the number of rows in the problem increases.*
+![Figure 2](images/plot100.jpg) *Figure 2. There is a linear increase in execution time for both the sequential and parallel algorithms as the number of rows in the problem increases.*
 
-![Figure 4](images/plot5000.jpg) *Figure 4. This figure shows how the execution time of the sequential and parallel best subset regression algorithms change when the number of columns is held constant at 5000.*
+![Figure 3](images/plot5000.jpg) *Figure 3. This figure shows how the execution time of the sequential and parallel best subset regression algorithms change when the number of columns is held constant at 5000.*
 
 From these plots I observed two things.
 First, for matrices with a low number of columns, the performance of the sequential algorithm was significantly better than the GPU implementation.
@@ -143,7 +140,7 @@ Instead of showing more plots that show linear increases as the number of rows i
 What I observed was that as the number of columns increased, there was a quadratic increase in the speedup obtained by the GPU algorithm over the sequential algorithm.
 This occurred for reasons previously mentioned that as the matrix width increased, each thread on the GPU was able to be more efficiently utilized and perform the nessecary calculations faster. 
 
-![Figure 5](images/speedup.jpg) *Figure 5. As the matrices become wider, the parallel algorithm has a much larger speedup than the sequential version.*
+![Figure 4](images/speedup.jpg) *Figure 4. As the matrices become wider, the parallel algorithm has a much larger speedup than the sequential version.*
 
 ## Speedup Limitations
 
@@ -162,7 +159,7 @@ Even though, I had thought that updating multiple rows simultaneously could lead
 For example, when I updated 16 rows at the same time, I noticed that my code took about 4 times as long than when I had only updated 1 row with the final implementation I decided to use for a few different problems. 
 Losing out on a whole axis of parallelism that I had expected to be able to use effected how much speedup that I believe could have been achieved for skinnier matrices, even though wide matrices were able to be sped up fairly well. 
 
-## Algorithm Breakdown
+## Components of the Algorithm
 
 If I were to divide my algorithm into different chunks to compare their execution time, I could divide the algorithm into a few phases.
 The first phase is loading values into shared memory for each row, which requires a very small portion of the execution time. 

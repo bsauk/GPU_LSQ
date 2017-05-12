@@ -29,37 +29,30 @@ __device__ __inline__ int dmin(int a, int b) {
   }
 }
 
-// As of 5:03pm on 5/8 this version calculates dR and dA correctly. However, currently dWeights, and dY are not outputting correctly.
-// This also causes dSSERR to output incorrectly because of incorrect inputs. It also appears that dD and dRHS are not currently calculated correctly. 
-// Update as of 11:45am 5/9 this version calculates all values correctly when NB = Matrix Size. Now working on cases when NB < Matrix Size.
-
 __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD, double* dR, double* dRHS, double* dSSERR, double* dWeights, int r_dim) {
 
-  //__shared__ double dXblock[(NB)*COLUMNS];
-  extern __shared__ double dXblock[];
-  //  __shared__ double sD[COLUMNS];
-  //  __shared__ double sRHS[COLUMNS];
+  extern __shared__ double dXblock[]; // Used shared memory based on the number of columns in a row, passed in function call.
 
   const int idx = blockIdx.x*blockDim.x+threadIdx.x; // Maps to rows
   const int jdx = blockIdx.y*blockDim.y+threadIdx.y; // Maps to columns
   double vsmall = 2.225e-307;
-  int perRow = dmin(COLUMNS, cols); // Currently should not work accurately if COLUMNS < cols
+  int perRow = dmin(COLUMNS, cols); 
   double w = 0.0, xk = 0.00, di = 0.00, cbar = 0.00, sbar = 0.00, xi = 0.00, tempR = 0.00, RHSi = 0.0, xy = 0.00, yi = 0.00;
   if(idx >= blockDim.x || jdx >= blockDim.y ) return;
   
-  for(int i=threadIdx.x; i<rows; i+=blockDim.x) { // i<rows
-    for(int j=threadIdx.y; j<perRow; j+=blockDim.y) {
+  for(int i=threadIdx.x; i<rows; i+=blockDim.x) { // Iterate over all rows
+    for(int j=threadIdx.y; j<perRow; j+=blockDim.y) { // Iterate over all columns to get values into shared memory for that row
       dXblock[j] = dA[i*cols+j];
     }
     int nextr = 0;
     w = dWeights[i];
     yi = dY[i];
     
-    for(int j=0; j<cols; j++) { // j < cols
-      __syncthreads();
-      di = dD[j];
-      RHSi = dRHS[j];
-      if(fabs(w) < vsmall) {
+    for(int j=0; j<cols; j++) { //Iterate over all columns
+      __syncthreads(); // Ensure that the previous iteration finishes before the next one begins. Possibly too tight of a constraint could relax if next value has finished.
+      di = dD[j];  // Diagonal matrix
+      RHSi = dRHS[j]; // RHS of equation
+      if(fabs(w) < vsmall) { // If the weight is less than 1, go to next row.
 	dWeights[i] = w;
 	dY[i] = yi;
 	break;
@@ -69,8 +62,8 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	cbar = di/(di+w*xi*xi);
 	sbar = w*xi/(di+w*xi*xi);
 	di = di+w*xi*xi;
-	for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) {
-	  if(colBlock > j) {
+	for(int colBlock=jdx; colBlock<perRow; colBlock+=blockDim.y) { // This is how I have every thread update a value in the row, and then loop through for all values in the row.
+	  if(colBlock > j) { // Only update if a value is larger than the current column.
 	    tempR = dR[nextr+colBlock-j-1];
 	    xk = dXblock[colBlock];
 	    dXblock[colBlock] = xk-xi*tempR;
@@ -78,18 +71,19 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
 	    tempR = cbar*tempR+sbar*xk;
 	  }
 	}
+	// Update values here
 	w = cbar*w;
 	xy = yi;
 	yi = xy-xi*RHSi;
 	RHSi = cbar*RHSi+sbar*xy;
-	for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) {
+	for(int colBlock=threadIdx.y; colBlock<perRow; colBlock+=blockDim.y) { // This ensures that only one thread that has useful information updates the value in global mem.
 	  if(colBlock == j) {
 	    dD[colBlock] = di;
 	    dRHS[colBlock] = RHSi;
 	  }
 	}
       }
-      nextr = nextr+cols-j-1;
+      nextr = nextr+cols-j-1; // Deals with moving to new position for the R matrix.
     }
     if(jdx==0) {
       dWeights[i] = w;
@@ -108,7 +102,7 @@ __global__ void includGPU(int rows, int cols, double* dA, double* dY, double* dD
   }
   */     
   
-  if(jdx==0 && idx==0) { // Have to sequentially add the dSSERR values because atomic_dadd doesn't seem to work in CUDA.
+  if(jdx==0 && idx==0) { // Have to sequentially add the dSSERR values because atomic_dadd doesn't seem to work in CUDA, even though it is in the documentation.
     for(int i=0; i<rows; i++) {
       dSSERR[0] = dSSERR[0]+dWeights[i]*dY[i]*dY[i];
     }
@@ -122,7 +116,6 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   int vorder[cols], row_ptr[cols], ifault[1], ier[1];
 
   bool lindep[cols], tol_set[1], rss_set[1];
-  //  double total_sumsq;
     
   sserr[0] = 0.0;
   tol_set[0] = false;
@@ -146,7 +139,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
   double* dRHS = NULL; //cols
   double* dSSERR = NULL; // cols
   double* dWeights = NULL; //rows
-
+  // Allocate and copy values to the GPU, were not timed.
   cudaMalloc((void **)&dA, rows*(cols+1)*sizeof(double));
   cudaMalloc((void **)&dY, rows*sizeof(double));
   cudaMalloc((void **)&dD, cols*sizeof(double));
@@ -158,7 +151,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
 
   cudaMemcpy(dA, A, rows*(cols+1)*sizeof(double), cudaMemcpyHostToDevice);
   cudaMemcpy(dY, y, rows*sizeof(double), cudaMemcpyHostToDevice);
-  cudaMemcpy(dWeights, weights, rows*sizeof(double), cudaMemcpyHostToDevice); // May want to consider just assuming 1 for now if this takes too long :/.
+  cudaMemcpy(dWeights, weights, rows*sizeof(double), cudaMemcpyHostToDevice); // May want to consider just assuming 1 for now if this takes too long.
   
   cudaMemset(dD, 0.00, cols*sizeof(double));
   cudaMemset(dR, 0.00, r_dim*sizeof(double));
@@ -222,16 +215,12 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
     report(i, rss[i], max_size, bound, nbest, ress, vorder, lopt);
   }
   
-  //  total_sumsq = rss[0];
   int first = 1;
   int last = cols;
 
   // The next part is that I will need to implement the different subset selection techniques, pick a few
   // Forward selection
-  //  double startForwrd = CycleTimer::currentSeconds();
   forwrd(first, last, ifault, cols, max_size, D, rhs, r, nbest, rss, bound, ress, vorder, lopt, rss_set, sserr, row_ptr, tol);
-  //  double endForwrd = CycleTimer::currentSeconds();
-  //  std::cout << "Forwrd took " << 1000.f*(endForwrd-startForwrd) << std::endl;
   if(check) {
     for(int i=first; i<max_size; i++) {
       std::cout << "Best subsets found of " << i << " variables" << std::endl;
@@ -246,7 +235,7 @@ void gpu_lsq(double* A, double* weights, double* y, int rows, int cols, int nbes
       }
     }
   }
-
+  // Free allocated memory afterwards.
   cudaFree(dA);
   cudaFree(dY);
   cudaFree(dD);

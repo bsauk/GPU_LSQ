@@ -9,15 +9,8 @@
 
 #include "CycleTimer.h"
 
-/****************************************************************************************************
-bsauk 4/18
-
-While developing, this function is used to test the functions I am implementing for subset selection.
-These functions will serve as an accuracy comparison later on when developing parallel algorithms.
-Initial comparison is with the Fortran algorithms that Alan Miller provided on his website. 
-
-I will try to use simple examples that test the conditionals of every algorithm being developed.
-Timing will only consider the best subset selection techniques and not the generation part.
+/***********************************************************************************************************************************
+bsauk 5/12
 
 Inputs for this function are: 
 1) File name for best subset selection and linear regression
@@ -27,10 +20,11 @@ Inputs for this function are:
 5) Maximum number of variables to be used in the regression.
 6) Either 0 or 1 to determine if checking should be used. 1 for comparison against gold version 0 otherwise.
 
-******************************************************************************************************/
+This algorithm can be used in conjuction with the makeMatrix.cpp file to produce matrices that can be tested with this algorithm.
 
-//#define MAXVAR 1500 // Problem specific, number of variables in equation can adjust these values
-//#define MAXCASES 7500 // Problem specific, number of trials
+The premise of this algorithm is to read in a matrix from a .dat file, and then determine the best subset regression.
+
+**************************************************************************************************************************************/
 
 void compare_results(int first, int max_size, int nbest, int lopt_dim1, double** ressGold, double** ressGPU, int** loptGold, int** loptGPU);
 
@@ -67,21 +61,9 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
       xrow[j] = A[i*cols+j-1];
     }
     includ(weights[i], xrow, y[i], cols, D, r, rhs, sserr);
-    //    std::cout << "SSERR = " << *sserr << std::endl;
-    //    std::cout << "Includ for " << i << " = " << 1000.f*(endInclud-startInclud) << " ms" << std::endl;
   }
   double endInclud = CycleTimer::currentSeconds();
   std::cout<<1000.f*(endInclud-startInclud) <<std::endl;
-  //  std::cout << "sserr = " << sserr[0] << std::endl;
-  /*
-  for(int i=0; i<cols; i++) {
-    std::cout<<"D["<<i<<"] = "<<D[i]<<" rhs["<<i<<"] = "<<rhs[i]<<std::endl;
-  }
-  for(int i=0; i<r_dim; i++) {
-    std::cout<<"r["<<i<<"] = "<<r[i]<<std::endl;
-  }
-  std::cout<<"sserr="<<sserr[0]<<std::endl;
-  */
   nobs = rows;
 
   sing(lindep, ifault, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
@@ -118,7 +100,7 @@ void subset_gold(double* A, double* weights, double* y, int rows, int cols, int 
       }
     }
   }
-  // Not sure if these three need to be called again here...
+
   tolset(cols, work, r, tol, tol_set);
   sing(lindep, ier, cols, D, tol_set, r, tol, row_ptr, rhs, sserr, work);
   ss(cols, sserr, rss, rss_set, D, rhs);
@@ -261,11 +243,6 @@ int main(int argc, char* argv[]) {
   }
   file.close();
   
-  //  memcpy(Amagma, Agold, rows*cols*sizeof(double));
-  //  memcpy(Adn, Agold, rows*cols*sizeof(double));
-  //  memcpy(yMagma, yGold, rows*sizeof(double));
-  //  memcpy(yDN, yGold, rows*sizeof(double));
-  // CPU sequential subset methodology copied from Fortran implementation
   double startGold = CycleTimer::currentSeconds();
   for(int i=0; i<1; i++) {
     subset_gold(Agold, weights, yGold, rows, cols, nbest, max_size, ressGold, loptGold, boundGold, check);
@@ -277,13 +254,13 @@ int main(int argc, char* argv[]) {
     gpu_lsq(AGPU, weights, yGPU, rows, cols, nbest, max_size, ressGPU, loptGPU, boundGPU, check);
   }
   double endGPU = CycleTimer::currentSeconds();
-  // if(check) compare_results(1, max_size, nbest, lopt_dim1, ressGold, ressGPU, loptGold, loptGPU);
   if(check) {  
     std::cout << "Gold Time: " << 1000.f*(endGold-startGold) << " ms" << std::endl;
     std::cout << "GPU Time: " << 1000.f*(endGPU-startGPU) << " ms" << std::endl;
   }
   /****************************************************************************************************************************************
   // The following parts below are for the MAGMA and cuSolverDN comparisons. Currently commented out while I work on parallelizing my code.
+// This part was not implemented for my project, may work on for more comparisons later.
 
 
   for(int i=0; i<1; i++) {
