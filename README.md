@@ -23,7 +23,8 @@ Best subset regression is a method used to determine the most accurate model giv
 When generating a linear model, not all measured variables may have a direct impact on the value of some dependent variable. 
 In those cases, the best subset regression problem attempts to find the best subset of variables that can be used to predict an output response [2].
 
-![Figure 1](images/residuals.jpg) *Figure 1. This plot shows a one variable linear model that is being fit to some data.*
+![Figure 1](images/residuals.jpg) 
+*Figure 1. This plot shows a one variable linear model that is fit to data.*
 
 In the LSQ algorithm that I parallelized, the part that is computationaly expensive and could benefit from parallelization was the column updates.
 This algorithm iteratively reads in a row of data and updates a QR factorization.
