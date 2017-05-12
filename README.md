@@ -126,11 +126,9 @@ Across the experiments, the number of rows in each of the experiments was held a
 Initially, I examined how the two algorithms compared as I increased the number of rows, while holding the number of columns constant. 
 As seen in the Figures below, what was observed was that as the number of rows increased, the execution time linearly increased as well.
 
-![Figure 3](images/plot100.jpg)
-*This figure shows how the execution time of the sequential and parallel best subset regression algorithms change when the number of columns is held constant at 100.*
+![Figure 3](images/plot100.jpg) *This figure shows how the execution time of the sequential and parallel best subset regression algorithms change when the number of columns is held constant at 100.*
 
-![Figure 4](images/plot5000.jpg)
-*This figure shows how the execution time of the sequential and parallel best subset regression algorithms change when the number of columns is held constant at 5000. *
+![Figure 4](images/plot5000.jpg) *This figure shows how the execution time of the sequential and parallel best subset regression algorithms change when the number of columns is held constant at 5000.*
 
 From these plots I observed two things.
 First, for matrices with a low number of columns, the performance of the sequential algorithm was significantly better than the GPU implementation.
