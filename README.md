@@ -142,7 +142,7 @@ Instead of showing more plots that show linear increases as the number of rows i
 What I observed was that as the number of columns increased, there was a quadratic increase in the speedup obtained by the GPU algorithm over the sequential algorithm.
 This occurred for reasons previously mentioned that as the matrix width increased, each thread on the GPU was able to be more efficiently utilized and perform the nessecary calculations faster. 
 
-![Figure 5](images/speedups.jpg)
+![Figure 5](images/speedup.jpg)
 
 ## Speedup Limitations
 
